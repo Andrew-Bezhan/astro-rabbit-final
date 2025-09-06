@@ -1,4 +1,4 @@
-# test edit from Cursor_2
+# test edit from Cursor_3
 """
 Основной модуль AI-астролога AstroRabbit
 """
