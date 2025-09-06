@@ -284,3 +284,30 @@ class GeminiAstroClient:
             
             # Если все не удалось - выбрасываем исключение, чтобы вызывающий код мог обработать
             raise Exception(f"Gemini недоступен: {e}")
+    
+    async def generate_analysis_with_prompt(self, prompt: str) -> str:
+        """Генерация анализа с использованием готового промпта"""
+        try:
+            if not self.model:
+                raise Exception("Gemini модель не инициализирована")
+            
+            logger.info(f"🔮 Отправляем запрос к Gemini с готовым промптом ({len(prompt)} символов)")
+            
+            response = self.model.generate_content(prompt)
+            
+            if not response:
+                raise Exception("Gemini response is None")
+            
+            if not hasattr(response, 'text'):
+                raise Exception("Gemini response has no text attribute")
+            
+            result = response.text
+            if not result:
+                raise Exception("Gemini returned empty text")
+            
+            logger.info(f"🔮 Gemini анализ с промптом завершен ({len(result)} символов)")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка Gemini анализа с промптом: {type(e).__name__}: {e}")
+            raise Exception(f"Gemini недоступен: {e}")

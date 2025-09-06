@@ -37,26 +37,54 @@ class QdrantClient:
             from qdrant_client import QdrantClient as QClient
             from qdrant_client.models import Distance, VectorParams, PointStruct
             
+            # Отключаем SSL предупреждения для VPN
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
             # Убираем порт для cloud версии Qdrant
             clean_url = self.url.replace(':6333', '') if ':6333' in self.url else self.url
             
-            self.client = QClient(
-                url=clean_url,
-                api_key=self.api_key,
-                timeout=30,
-                prefer_grpc=False,  # Используем HTTP для cloud
-                check_compatibility=False  # Отключаем проверку совместимости
-            )
+            # Пробуем разные настройки подключения для VPN
+            connection_attempts = [
+                # Попытка 1: Стандартное подключение
+                {
+                    'url': clean_url,
+                    'api_key': self.api_key,
+                    'timeout': 30,
+                    'prefer_grpc': False,
+                    'check_compatibility': False
+                },
+                # Попытка 2: С увеличенным таймаутом
+                {
+                    'url': clean_url,
+                    'api_key': self.api_key,
+                    'timeout': 60,
+                    'prefer_grpc': False,
+                    'check_compatibility': False
+                }
+            ]
             
-            # Проверяем соединение
-            try:
-                self.client.get_collections()
-                logger.info(f"✅ Qdrant клиент инициализирован для {clean_url}")
-                # Создаем коллекцию если не существует
+            self.client = None
+            for i, config in enumerate(connection_attempts, 1):
+                try:
+                    logger.info(f"🔄 Попытка подключения к Qdrant #{i}")
+                    temp_client = QClient(**config)
+                    # Проверяем соединение
+                    temp_client.get_collections()
+                    self.client = temp_client
+                    logger.info(f"✅ Qdrant подключен с попытки #{i}")
+                    break
+                except Exception as e:
+                    logger.warning(f"⚠️ Попытка #{i} неудачна: {e}")
+                    if i == len(connection_attempts):
+                        logger.warning("⚠️ Все попытки подключения к Qdrant исчерпаны")
+            
+            if not self.client:
+                raise Exception("Не удалось подключиться к Qdrant после всех попыток")
+            
+            # Создаем коллекцию если клиент успешно подключен
+            if self.client:
                 self._ensure_collection()
-            except Exception as conn_error:
-                logger.warning(f"⚠️ Qdrant недоступен (проверка соединения): {conn_error}")
-                self.client = None
             
         except Exception as e:
             logger.warning(f"⚠️ Qdrant недоступен: {e}")

@@ -50,7 +50,7 @@ class AstroBot:
             # АГРЕССИВНАЯ ОЧИСТКА ПЕРЕД СТАРТОМ
             try:
                 from telegram import Bot
-                temp_bot = Bot(token=self.bot_token)
+                temp_bot = Bot(token=self.config.bot.token)
                 
                 # Принудительно очищаем webhook и updates
                 await temp_bot.delete_webhook(drop_pending_updates=True)

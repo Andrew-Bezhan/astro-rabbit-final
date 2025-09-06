@@ -7,7 +7,14 @@ AI-астролог для анализа компаний и персональ
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
-from .prompts import ASTRO_RABBIT_SYSTEM_PROMPT
+from .prompts import (
+    ASTRO_RABBIT_SYSTEM_PROMPT,
+    COMPANY_ZODIAC_PROMPT,
+    BUSINESS_FORECAST_PROMPT,
+    COMPATIBILITY_PROMPT,
+    DAILY_FORECAST_PROMPT,
+    DETAILED_ANALYSIS_PROMPTS
+)
 from .numerology import NumerologyCalculator
 from .gemini_client import GeminiAstroClient
 from astrology_api.astro_calculations import AstroCalculations
@@ -39,22 +46,57 @@ class AstroAgent:
     
     async def analyze_company_zodiac(self, company_info: Dict[str, Any], 
                                    news_data: str = "") -> str:
-        """Анализ знака зодиака компании через Gemini"""
+        """Анализ знака зодиака компании через Gemini с использованием промптов"""
         try:
             if not self.gemini_client:
                 return "❌ AI сервис недоступен"
             
-            zodiac_sign = self._get_zodiac_safe(company_info.get('registration_date'))
+            # Получаем дату регистрации
+            registration_date = company_info.get('registration_date')
+            if isinstance(registration_date, str):
+                try:
+                    registration_date = datetime.strptime(registration_date, '%Y-%m-%d')
+                except:
+                    registration_date = None
             
-            chart_data = {
-                "company_name": company_info.get('name', ''),
-                "zodiac_sign": zodiac_sign,
-                "registration_date": str(company_info.get('registration_date', '')),
-                "sphere": company_info.get('sphere', ''),
-                "news_context": news_data[:2000] if news_data else ''
-            }
+            # Получаем натальную карту
+            natal_chart = {}
+            if self.astro_calculations and registration_date:
+                natal_chart = await self.astro_calculations.get_company_natal_chart(
+                    company_info.get('name', ''),
+                    registration_date,
+                    company_info.get('registration_place', '')
+                )
             
-            result = self.gemini_client.generate_astro_analysis(chart_data, "business")
+            zodiac_sign = self._get_zodiac_safe(registration_date)
+            
+            # Расширенная информация для промпта
+            astro_info = ""
+            if natal_chart:
+                basic_info = natal_chart.get('basic_info', {})
+                interpretation = natal_chart.get('interpretation', {})
+                
+                astro_info = f"""
+Детальная астрологическая информация:
+• Элемент: {basic_info.get('element', '')}
+• Управитель: {basic_info.get('ruler', '')}
+• Бизнес-стиль: {interpretation.get('business_style', '')}
+• Финансовые перспективы: {interpretation.get('financial_outlook', '')}
+• Потенциал роста: {interpretation.get('growth_potential', '')}
+• Рекомендуемые сферы: {', '.join(basic_info.get('best_spheres', []))}
+                """
+            
+            # Формируем промпт согласно prompts.py
+            prompt = COMPANY_ZODIAC_PROMPT.format(
+                company_name=company_info.get('name', ''),
+                registration_date=registration_date.strftime('%d.%m.%Y') if registration_date else "Неизвестно",
+                registration_place=company_info.get('registration_place', ''),
+                zodiac_sign=zodiac_sign,
+                news_data=news_data[:2000]  # Ограничиваем размер
+            ) + astro_info
+            
+            # Отправляем запрос к Gemini с правильным промптом
+            result = await self.gemini_client.generate_analysis_with_prompt(prompt)
             logger.info(f"✨ Анализ знака зодиака для {company_info.get('name')} завершен через Gemini")
             
             return result or "❌ Не удалось получить анализ"
