@@ -12,29 +12,29 @@ logger = setup_logger()
 
 
 class GPTAstroClient:
-    """Клиент для астрологических расчетов на базе Gemini (бывший GPT)"""
+    """Клиент для астрологических расчетов на базе OpenAI (бывший GPT)"""
     
     def __init__(self):
-        """Инициализация Gemini клиента"""
+        """Инициализация OpenAI клиента"""
         self.config = load_config()
         try:
-            from ai_astrologist.gemini_client import GeminiAstroClient
-            self.gemini_client = GeminiAstroClient()
-            logger.info("🔮 Gemini астрологический клиент инициализирован")
+            from ai_astrologist.openai_client import OpenAIAstroClient
+            self.openai_client = OpenAIAstroClient()
+            logger.info("🔮 OpenAI астрологический клиент инициализирован")
         except Exception as e:
-            logger.warning(f"⚠️ Gemini клиент недоступен: {type(e).__name__}")
-            self.gemini_client = None
+            logger.warning(f"⚠️ OpenAI клиент недоступен: {type(e).__name__}")
+            self.openai_client = None
     
     async def get_birth_chart(self, birth_date: datetime, latitude: float, longitude: float) -> Dict[str, Any]:
-        """Получение натальной карты через Gemini"""
-        if not self.gemini_client:
-            logger.warning("⚠️ Gemini клиент недоступен для натальной карты")
+        """Получение натальной карты через OpenAI"""
+        if not self.openai_client:
+            logger.warning("⚠️ OpenAI клиент недоступен для натальной карты")
             return self._get_fallback_chart(birth_date, latitude, longitude)
         
         try:
-            # Используем Gemini для создания натальной карты
-            chart_data = self.gemini_client.get_birth_chart(birth_date, latitude, longitude)
-            logger.info("✨ Натальная карта создана через Gemini")
+            # Используем OpenAI для создания натальной карты
+            chart_data = self.openai_client.get_birth_chart(birth_date, latitude, longitude)
+            logger.info("✨ Натальная карта создана через OpenAI")
             return chart_data
                 
         except Exception as e:

@@ -1103,7 +1103,7 @@ class BotHandlers:
         # Обработка навигации по частям длинного анализа
         elif callback_data.startswith("next_part_"):
             part_index = int(callback_data.replace("next_part_", ""))
-            await self._show_next_analysis_part(update, context)
+            await self._show_next_analysis_part(update, context, part_index)
         
         else:
             await query.edit_message_text(
@@ -2502,7 +2502,7 @@ class BotHandlers:
         
         return parts if parts else [text]
 
-    async def _show_next_analysis_part(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def _show_next_analysis_part(self, update: Update, context: ContextTypes.DEFAULT_TYPE, part_index: int = None):
         """Показ следующей части анализа"""
         if not update.callback_query or not update.effective_user:
             return
@@ -2517,20 +2517,25 @@ class BotHandlers:
             )
             return
         
-        current_index = user_data.get('current_part_index', 1)
+        # Используем переданный part_index или текущий индекс
+        if part_index is not None:
+            current_index = part_index
+        else:
+            current_index = user_data.get('current_part_index', 1)
+            
         total_parts = user_data.get('total_parts', 1)
         analysis_type = user_data.get('analysis_type', 'unknown')
         parts = user_data['analysis_parts']
         
-        if current_index >= total_parts or not parts:
+        if current_index > total_parts or current_index > len(parts):
             await update.callback_query.edit_message_text(
                 "❌ Больше частей анализа нет.",
                 reply_markup=self.keyboards.get_back_inline_button()
             )
             return
         
-        # Показываем все части до текущей включительно (накопленный текст)
-        accumulated_text = "\n\n".join(parts[:current_index])
+        # Показываем только ТЕКУЩУЮ часть (не накопленную!)
+        current_part_text = parts[current_index - 1]  # Индексы с 0, но part_index с 1
         
         # Определяем заголовок в зависимости от типа анализа
         if analysis_type == 'zodiac':
@@ -2545,7 +2550,7 @@ class BotHandlers:
         # Формируем клавиатуру
         keyboard = []
         
-        if current_index < total_parts - 1:
+        if current_index < total_parts:
             # Есть еще части
             keyboard.append([InlineKeyboardButton("📄 Следующая часть", callback_data=f"next_part_{current_index + 1}")])
         # Последняя часть - просто кнопка назад
@@ -2554,15 +2559,15 @@ class BotHandlers:
         
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # Показываем накопленный текст
+        # Показываем только текущую часть
         await update.callback_query.edit_message_text(
-            f"{header}{accumulated_text}\n\n📄 Показано {current_index} из {total_parts} частей",
+            f"{header}{current_part_text}\n\n📄 Часть {current_index} из {total_parts}",
             parse_mode='HTML',
             reply_markup=reply_markup
         )
         
-        # Обновляем индекс
-        user_data['current_part_index'] = current_index + 1
+        # Обновляем индекс для следующего вызова
+        user_data['current_part_index'] = current_index
 
     async def _handle_company_zodiac_analysis(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработка анализа знака зодиака компании"""

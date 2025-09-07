@@ -32,15 +32,15 @@ class QdrantConfig:
 
 @dataclass
 class OpenAIConfig:
-    """Конфигурация OpenAI (Deprecated - используется Gemini)"""
+    """Конфигурация OpenAI - основной AI провайдер"""
     api_key: str
-    model: str = "gpt-4"
+    model: str = "gpt-4-turbo-preview"  # Используем самую новую модель
     temperature: float = 0.7
-    max_tokens: int = 2000
+    max_tokens: int = 4000  # Увеличиваем лимит токенов
 
 @dataclass
 class GeminiConfig:
-    """Конфигурация Google Gemini"""
+    """Конфигурация Google Gemini (Deprecated - используется OpenAI)"""
     api_key: str
     model: str = "gemini-2.5-flash"
     temperature: float = 0.7
@@ -71,7 +71,7 @@ class AppConfig:
     bot: BotConfig
     database: DatabaseConfig
     qdrant: QdrantConfig
-    openai: OpenAIConfig  # Deprecated
+    openai: OpenAIConfig  # Основной AI провайдер
     gemini: GeminiConfig
     newsdata: NewsDataConfig
     astrology: AstrologyConfig

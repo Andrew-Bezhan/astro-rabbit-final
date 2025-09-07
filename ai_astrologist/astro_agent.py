@@ -32,15 +32,15 @@ class AstroAgent:
         self.config = load_config()
         
         try:
-            from .gemini_client import GeminiAstroClient
-            self.gemini_client = GeminiAstroClient()
+            from .openai_client import OpenAIAstroClient
+            self.openai_client = OpenAIAstroClient()
             self.numerology = NumerologyCalculator()
             self.astro_calculations = AstroCalculations()
-            logger.info("✅ AstroRabbit инициализирован с Gemini и астрологическими расчетами")
+            logger.info("✅ AstroRabbit инициализирован с OpenAI и астрологическими расчетами")
         except Exception as e:
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА: AI-астролог недоступен (Gemini API): {e}")
+            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА: AI-астролог недоступен (OpenAI API): {e}")
             # НЕ ИСПОЛЬЗУЕМ ЗАГЛУШКИ - выбрасываем исключение
-            raise Exception(f"Gemini клиент не может быть инициализирован: {e}")
+            raise Exception(f"OpenAI клиент не может быть инициализирован: {e}")
     
     async def analyze_company_zodiac(self, company_info: Dict[str, Any], 
                                    news_data: str = "") -> str:
@@ -113,9 +113,9 @@ class AstroAgent:
                 news_data=news_data[:2000]  # Ограничиваем размер
             ) + astro_info
             
-            # Отправляем запрос к Gemini
-            if not self.gemini_client:
-                raise Exception("Gemini клиент не инициализирован")
+            # Отправляем запрос к OpenAI
+            if not self.openai_client:
+                raise Exception("OpenAI клиент не инициализирован")
             
             chart_data = {
                 "company_name": company_info.get('name', ''),
@@ -124,8 +124,8 @@ class AstroAgent:
                 "news_context": news_data[:2000]
             }
             
-            result = self.gemini_client.generate_astro_analysis(chart_data, "business")
-            logger.info(f"✨ Анализ знака зодиака для {company_info.get('name')} завершен через Gemini")
+            result = self.openai_client.generate_astro_analysis(chart_data, "business")
+            logger.info(f"✨ Анализ знака зодиака для {company_info.get('name')} завершен через OpenAI")
             
             return result or "🔮 Астрологический анализ завершен. Получены уникальные инсайты для вашей компании."
             
@@ -187,9 +187,9 @@ class AstroAgent:
                 news_data=news_data[:2000]
             )
             
-            # Отправляем запрос к Gemini
-            if not self.gemini_client:
-                raise Exception("Gemini клиент не инициализирован")
+            # Отправляем запрос к OpenAI
+            if not self.openai_client:
+                raise Exception("OpenAI клиент не инициализирован")
             
             chart_data = {
                 "company_data": company_data,
@@ -197,8 +197,8 @@ class AstroAgent:
                 "news_data": news_data[:2000]
             }
             
-            result = self.gemini_client.generate_astro_analysis(chart_data, "business")
-            logger.info(f"📊 Бизнес-прогноз для {company_data.get('name')} сгенерирован через Gemini")
+            result = self.openai_client.generate_astro_analysis(chart_data, "business")
+            logger.info(f"📊 Бизнес-прогноз для {company_data.get('name')} сгенерирован через OpenAI")
             
             return result or "📊 Бизнес-прогноз готов. Получены стратегические рекомендации для развития компании."
             
@@ -245,9 +245,9 @@ class AstroAgent:
                 object_numerology=object_numerology
             )
             
-            # Отправляем запрос к Gemini
-            if not self.gemini_client:
-                raise Exception("Gemini клиент не инициализирован")
+            # Отправляем запрос к OpenAI
+            if not self.openai_client:
+                raise Exception("OpenAI клиент не инициализирован")
             
             chart_data = {
                 "company_data": company_data,
@@ -255,8 +255,8 @@ class AstroAgent:
                 "object_type": object_type
             }
             
-            result = self.gemini_client.generate_astro_analysis(chart_data, "compatibility")
-            logger.info(f"🤝 Анализ совместимости {object_type} завершен через Gemini")
+            result = self.openai_client.generate_astro_analysis(chart_data, "compatibility")
+            logger.info(f"🤝 Анализ совместимости {object_type} завершен через OpenAI")
             
             return result or "🤝 Анализ совместимости завершен. Получены рекомендации по партнерским отношениям."
             
@@ -295,9 +295,9 @@ class AstroAgent:
                 today_news=today_news[:1500]
             )
             
-            # Отправляем запрос к Gemini
-            if not self.gemini_client:
-                raise Exception("Gemini клиент не инициализирован")
+            # Отправляем запрос к OpenAI
+            if not self.openai_client:
+                raise Exception("OpenAI клиент не инициализирован")
             
             chart_data = {
                 "company_data": company_data,
@@ -305,8 +305,8 @@ class AstroAgent:
                 "today_news": today_news[:1500]
             }
             
-            result = self.gemini_client.generate_astro_analysis(chart_data, "daily")
-            logger.info(f"📅 Ежедневный прогноз для {company_data.get('name')} создан через Gemini")
+            result = self.openai_client.generate_astro_analysis(chart_data, "daily")
+            logger.info(f"📅 Ежедневный прогноз для {company_data.get('name')} создан через OpenAI")
             
             return result or "📅 Ежедневный прогноз готов. Получены рекомендации на сегодняшний день."
             
@@ -344,9 +344,9 @@ class AstroAgent:
                 news_data=news_data[:1500]
             )
             
-            # Отправляем запрос к Gemini
-            if not self.gemini_client:
-                raise Exception("Gemini клиент не инициализирован")
+            # Отправляем запрос к OpenAI
+            if not self.openai_client:
+                raise Exception("OpenAI клиент не инициализирован")
             
             chart_data = {
                 "company_data": company_data,
@@ -355,8 +355,8 @@ class AstroAgent:
                 "news_data": news_data[:2000]
             }
             
-            result = self.gemini_client.generate_astro_analysis(chart_data, "detailed")
-            logger.info(f"🔍 Детальный анализ '{analysis_type}' для {company_data.get('name')} завершен через Gemini")
+            result = self.openai_client.generate_astro_analysis(chart_data, "detailed")
+            logger.info(f"🔍 Детальный анализ '{analysis_type}' для {company_data.get('name')} завершен через OpenAI")
             
             return result or "🔍 Детальный анализ завершен. Получены глубокие инсайты для принятия решений."
             
