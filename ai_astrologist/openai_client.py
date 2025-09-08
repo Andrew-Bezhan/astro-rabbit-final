@@ -20,7 +20,14 @@ from utils.config import load_config
 from utils.logger import setup_logger
 
 # Импортируем промпты для генерации и критики
-from ai_astrologist.prompts import ASTRO_RABBIT_SYSTEM_PROMPT, COMPANY_ZODIAC_INFO_PROMPT, BUSINESS_FORECAST_PROMPT, COMPATIBILITY_PROMPT, DAILY_FORECAST_PROMPT, CRITIC_PROMPT
+from ai_astrologist.prompts import (
+    ASTRO_RABBIT_SYSTEM_PROMPT,
+    COMPANY_ZODIAC_INFO_PROMPT,
+    BUSINESS_FORECAST_PROMPT,
+    COMPATIBILITY_PROMPT,
+    DAILY_FORECAST_PROMPT,
+    CRITIC_PROMPT
+)
 
 logger = setup_logger()
 

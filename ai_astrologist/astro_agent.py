@@ -13,8 +13,7 @@ from utils.helpers import get_zodiac_sign
 from utils.logger import setup_logger
 
 # Подключаем загрузку профилей и расчет метрик из scoring.yaml
-from validation_agent.metrics_loader import load_scoring_profile
-from validation_agent.scorecard import compute_score
+from validation_agent import load_scoring_profile, compute_score
 
 logger = setup_logger()
 

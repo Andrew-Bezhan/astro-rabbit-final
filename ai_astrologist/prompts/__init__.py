@@ -1,2 +1,24 @@
 # -*- coding: utf-8 -*-
-# Пакет промтов. Используйте точечные импорты из подмодулей.
+"""
+Пакет промтов AstroRabbit.
+Реэкспорт основных констант для удобного импорта:
+from ai_astrologist.prompts import BUSINESS_FORECAST_PROMPT, ...
+"""
+
+from .system import ASTRO_RABBIT_SYSTEM_PROMPT
+from .companies import COMPANIES_PROMPT
+from .zodiac_info import COMPANY_ZODIAC_INFO_PROMPT
+from .business_forecast import BUSINESS_FORECAST_PROMPT
+from .compatibility import COMPATIBILITY_PROMPT
+from .daily_forecast import DAILY_FORECAST_PROMPT
+from .critic_prompt import CRITIC_PROMPT
+
+__all__ = [
+    "ASTRO_RABBIT_SYSTEM_PROMPT",
+    "COMPANIES_PROMPT",
+    "COMPANY_ZODIAC_INFO_PROMPT",
+    "BUSINESS_FORECAST_PROMPT",
+    "COMPATIBILITY_PROMPT",
+    "DAILY_FORECAST_PROMPT",
+    "CRITIC_PROMPT",
+]

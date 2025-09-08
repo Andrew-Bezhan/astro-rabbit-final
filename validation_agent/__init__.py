@@ -2,14 +2,16 @@
 Модуль валидации ответов AI
 """
 
-from .metrics_loader import load_metrics
-from .section_parser import parse_sections
-from .scorecard import calculate_score
-from .orchestrator import ValidationOrchestrator
+from .metrics_loader import load_scoring_profile
+from .section_parser import split_sections, word_count, has_markdown_or_html
+from .scorecard import compute_score
+from .orchestrator import PromptOrchestrator
 
 __all__ = [
-    'load_metrics',
-    'parse_sections',
-    'calculate_score',
-    'ValidationOrchestrator'
+    'load_scoring_profile',
+    'split_sections',
+    'word_count',
+    'has_markdown_or_html',
+    'compute_score',
+    'PromptOrchestrator'
 ]
