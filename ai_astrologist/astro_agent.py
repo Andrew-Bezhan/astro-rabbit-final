@@ -1,83 +1,68 @@
-# test edit from Cursor_3
+# -*- coding: utf-8 -*-
 """
 Основной модуль AI-астролога AstroRabbit
 """
 
-import openai
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 
-from .prompts import (
-    ASTRO_RABBIT_SYSTEM_PROMPT,
-    COMPANY_ZODIAC_PROMPT,
-    BUSINESS_FORECAST_PROMPT,
-    COMPATIBILITY_PROMPT,
-    DAILY_FORECAST_PROMPT,
-    DETAILED_ANALYSIS_PROMPTS
-)
-from .numerology import NumerologyCalculator
+from ai_astrologist.numerology import NumerologyCalculator
 from astrology_api.astro_calculations import AstroCalculations
 from utils.config import load_config
 from utils.helpers import get_zodiac_sign
 from utils.logger import setup_logger
 
+# Подключаем загрузку профилей и расчет метрик из scoring.yaml
+from validation_agent.metrics_loader import load_scoring_profile
+from validation_agent.scorecard import compute_score
+
 logger = setup_logger()
 
-
 class AstroAgent:
-    """AI-агент астролог AstroRabbit"""
-    
+    """AI-агент (астролог) AstroRabbit"""
     def __init__(self):
-        """Инициализация агента"""
+        """Инициализация агента AstroRabbit"""
         self.config = load_config()
-        
         try:
-            from .openai_client import OpenAIAstroClient
+            from ai_astrologist.openai_client import OpenAIAstroClient
             self.openai_client = OpenAIAstroClient()
             self.numerology = NumerologyCalculator()
             self.astro_calculations = AstroCalculations()
-            logger.info("✅ AstroRabbit инициализирован с OpenAI и астрологическими расчетами")
+            logger.info("✅ AstroRabbit успешно инициализирован (OpenAI клиент подключен)")
         except Exception as e:
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА: AI-астролог недоступен (OpenAI API): {e}")
-            # НЕ ИСПОЛЬЗУЕМ ЗАГЛУШКИ - выбрасываем исключение
+            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось инициализировать AI-астролога: {e}")
             raise Exception(f"OpenAI клиент не может быть инициализирован: {e}")
-    
-    async def analyze_company_zodiac(self, company_info: Dict[str, Any], 
-                                   news_data: str = "") -> str:
+
+    async def analyze_company_zodiac(self, company_info: Dict[str, Any], news_data: str = "") -> str:
         """
-        Анализ знака зодиака компании
-        
+        Анализ знака зодиака компании (краткий астрологический и нумерологический профиль).
+
         Args:
-            company_info (Dict): Информация о компании
-            news_data (str): Актуальные новости
-            
+            company_info (Dict): Информация о компании (название, дата/место регистрации и т.д.)
+            news_data (str): Актуальные новости для контекста (необязательный параметр)
+
         Returns:
-            str: Анализ знака зодиака
+            str: Сгенерированный анализ знака зодиака компании
         """
         try:
-            # Получаем натальную карту компании
+            # Парсим дату регистрации компании в объект datetime
             registration_date = company_info.get('registration_date')
             if isinstance(registration_date, str):
-                # Используем безопасное парсирование даты
-                formats = ['%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%dT%H:%M:%S']
                 date_obj = None
-                for fmt in formats:
+                for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%dT%H:%M:%S'):
                     try:
                         date_obj = datetime.strptime(registration_date, fmt)
                         break
                     except ValueError:
                         continue
-                
                 if date_obj is None:
                     try:
                         date_obj = datetime.fromisoformat(registration_date)
-                    except ValueError:
-                        # Фоллбэк дата если не удалось распарсить
-                        date_obj = datetime(2020, 1, 1)
-                        
-                registration_date = date_obj
-            
-            # Создаем натальную карту если доступны астрологические расчеты
+                    except Exception:
+                        date_obj = None
+                registration_date = date_obj or datetime(2020, 1, 1)
+
+            # Получаем натальную карту компании (подробные астрологические данные) если возможно
             natal_chart = {}
             if self.astro_calculations and registration_date:
                 natal_chart = await self.astro_calculations.get_company_natal_chart(
@@ -85,406 +70,256 @@ class AstroAgent:
                     registration_date,
                     company_info.get('registration_place', '')
                 )
-        
+
             zodiac_sign = get_zodiac_sign(registration_date) if registration_date else "Неизвестно"
-            
-            # Расширенная информация для промпта
+
+            # Подготовка дополнительной информации (аспекты, элементы) для справки
             astro_info = ""
             if natal_chart:
                 basic_info = natal_chart.get('basic_info', {})
                 interpretation = natal_chart.get('interpretation', {})
-                
-                astro_info = f"""
-Детальная астрологическая информация:
-• Элемент: {basic_info.get('element', '')}
-• Управитель: {basic_info.get('ruler', '')}
-• Бизнес-стиль: {interpretation.get('business_style', '')}
-• Финансовые перспективы: {interpretation.get('financial_outlook', '')}
-• Потенциал роста: {interpretation.get('growth_potential', '')}
-• Рекомендуемые сферы: {', '.join(basic_info.get('best_spheres', []))}
-                """
-            
-            # Формируем промпт
-            prompt = COMPANY_ZODIAC_PROMPT.format(
-                company_name=company_info.get('name', ''),
-                registration_date=registration_date.strftime('%d.%m.%Y') if registration_date else "Неизвестно",
-                registration_place=company_info.get('registration_place', ''),
-                zodiac_sign=zodiac_sign,
-                news_data=news_data[:2000]  # Ограничиваем размер
-            ) + astro_info
-            
-            # Отправляем запрос к OpenAI
+                astro_info = (
+                    "\nДетальная астрологическая информация:\n"
+                    f"• Элемент: {basic_info.get('element', '')}\n"
+                    f"• Управитель: {basic_info.get('ruler', '')}\n"
+                    f"• Бизнес-стиль: {interpretation.get('business_style', '')}\n"
+                    f"• Финансовые перспективы: {interpretation.get('financial_outlook', '')}\n"
+                    f"• Потенциал роста: {interpretation.get('growth_potential', '')}\n"
+                    f"• Рекомендуемые сферы: {', '.join(basic_info.get('best_spheres', []))}\n"
+                )
+
+            # Формируем входные данные для генерации текста
+            chart_data = {
+                "company_data": company_info,
+                "zodiac_sign": zodiac_sign,
+                "astro_info": astro_info,
+                "news_data": news_data[:2000] if news_data else ""
+            }
+
             if not self.openai_client:
                 raise Exception("OpenAI клиент не инициализирован")
-            
-            chart_data = {
-                "company_name": company_info.get('name', ''),
-                "zodiac_sign": zodiac_sign,
-                "registration_info": astro_info,
-                "news_context": news_data[:2000]
-            }
-            
-            result = self.openai_client.generate_astro_analysis(chart_data, "business")
-            logger.info(f"✨ Анализ знака зодиака для {company_info.get('name')} завершен через OpenAI")
-            
-            return result or "🔮 Астрологический анализ завершен. Получены уникальные инсайты для вашей компании."
-            
+
+            # Генерируем анализ с помощью LLM
+            result = self.openai_client.generate_astro_analysis(chart_data, "zodiac_info")
+            logger.info(f"✨ Завершён анализ знака зодиака для компании \"{company_info.get('name', '')}\"")
+
+            if result:
+                # Подключаем систему метрик для оценки результата
+                try:
+                    profile = load_scoring_profile("zodiac_info")
+                    local_score = compute_score(result, profile)
+                    critic_feedback = self.openai_client.criticize_answer("zodiac_info", result, profile)
+                    logger.info(
+                        f"📊 Локальная оценка: {local_score['score']}/10 — "
+                        f"Оценка критика: {critic_feedback.get('score', 'N/A')}/10, "
+                        f"Комментарий критика: {critic_feedback.get('comment', '')}"
+                    )
+                except Exception as me:
+                    logger.warning(f"⚠️ Не удалось вычислить метрики для zodiac_info: {me}")
+                return result
+            else:
+                return "🔮 Астрологический анализ завершён. Получены уникальные инсайты для вашей компании."
         except Exception as e:
-            # Критическая ошибка - НЕ ИСПОЛЬЗУЕМ ЗАГЛУШКИ
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА анализа знака зодиака: {e}")
+            logger.error(f"❌ Ошибка при анализе знака зодиака компании: {e}")
             raise Exception(f"Ошибка анализа знака зодиака: {e}")
-    
-    async def generate_business_forecast(self, company_data: Dict[str, Any],
-                                       astrology_data: str = "",
-                                       news_data: str = "") -> str:
+
+    async def generate_business_forecast(self, company_data: Dict[str, Any], astrology_data: str = "", news_data: str = "") -> str:
         """
-        Генерация полного бизнес-прогноза
-        
+        Генерация полного бизнес-прогноза для компании.
+
         Args:
-            company_data (Dict): Полные данные о компании
-            astrology_data (str): Астрологические данные
-            news_data (str): Новостные данные
-            
+            company_data (Dict): Полные данные компании
+            astrology_data (str): Предварительные астрологические данные (например, интерпретации натальной карты)
+            news_data (str): Сводка актуальных новостей для отрасли
+
         Returns:
-            str: Полный бизнес-прогноз
+            str: Сгенерированный бизнес-прогноз для компании
         """
         try:
-            # Обрабатываем даты и получаем знаки зодиака
+            # Определяем знаки зодиака на основе дат
             company_zodiac = self._get_zodiac_safe(company_data.get('registration_date'))
             owner_zodiac = self._get_zodiac_safe(company_data.get('owner_birth_date'))
             director_zodiac = self._get_zodiac_safe(company_data.get('director_birth_date'))
-            
-            # Рассчитываем нумерологические числа
+
+            # Вычисляем нумерологические числа владельца и директора компании
             owner_numerology = 0
             director_numerology = 0
-            
             if company_data.get('owner_name'):
-                owner_numerology = self.numerology.calculate_name_number(
-                    company_data['owner_name']
-                )
-            
+                owner_numerology = self.numerology.calculate_name_number(company_data['owner_name'])
             if company_data.get('director_name'):
-                director_numerology = self.numerology.calculate_name_number(
-                    company_data['director_name']
-                )
-            
-            # Формируем промпт
-            prompt = BUSINESS_FORECAST_PROMPT.format(
-                company_name=company_data.get('name', ''),
-                registration_date=self._format_date_safe(company_data.get('registration_date')),
-                registration_place=company_data.get('registration_place', ''),
-                business_sphere=company_data.get('business_sphere', ''),
-                company_zodiac=company_zodiac,
-                owner_name=company_data.get('owner_name', 'Не указано'),
-                owner_birth_date=self._format_date_safe(company_data.get('owner_birth_date')),
-                owner_zodiac=owner_zodiac,
-                owner_numerology=owner_numerology,
-                director_name=company_data.get('director_name', 'Не указано'),
-                director_birth_date=self._format_date_safe(company_data.get('director_birth_date')),
-                director_zodiac=director_zodiac,
-                director_numerology=director_numerology,
-                astrology_data=astrology_data[:1500],
-                news_data=news_data[:2000]
-            )
-            
-            # Отправляем запрос к OpenAI
-            if not self.openai_client:
-                raise Exception("OpenAI клиент не инициализирован")
-            
+                director_numerology = self.numerology.calculate_name_number(company_data['director_name'])
+
+            # Подготавливаем данные для LLM
             chart_data = {
                 "company_data": company_data,
+                "company_zodiac": company_zodiac,
+                "owner_zodiac": owner_zodiac,
+                "director_zodiac": director_zodiac,
+                "owner_numerology": owner_numerology,
+                "director_numerology": director_numerology,
                 "astrology_data": astrology_data,
-                "news_data": news_data[:2000]
+                "news_data": news_data[:2000] if news_data else ""
             }
-            
-            result = self.openai_client.generate_astro_analysis(chart_data, "business")
-            logger.info(f"📊 Бизнес-прогноз для {company_data.get('name')} сгенерирован через OpenAI")
-            
-            return result or "📊 Бизнес-прогноз готов. Получены стратегические рекомендации для развития компании."
-            
-        except Exception as e:
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА бизнес-прогноза: {e}")
-            raise Exception(f"Ошибка генерации бизнес-прогноза: {e}")
-    
-    async def analyze_compatibility(self, company_data: Dict[str, Any],
-                                  object_data: Dict[str, Any],
-                                  object_type: str) -> str:
-        """
-        Анализ совместимости
-        
-        Args:
-            company_data (Dict): Данные компании
-            object_data (Dict): Данные объекта проверки
-            object_type (str): Тип объекта (сотрудник/клиент/партнер)
-            
-        Returns:
-            str: Анализ совместимости
-        """
-        try:
-            # Получаем знаки зодиака
-            company_zodiac = self._get_zodiac_safe(company_data.get('registration_date'))
-            object_zodiac = self._get_zodiac_safe(object_data.get('birth_date'))
-            
-            # Рассчитываем нумерологическое число
-            object_numerology = 0
-            if object_data.get('name'):
-                object_numerology = self.numerology.calculate_name_number(
-                    object_data['name']
-                )
-            
-            # Формируем промпт
-            prompt = COMPATIBILITY_PROMPT.format(
-                company_name=company_data.get('name', ''),
-                company_zodiac=company_zodiac,
-                business_sphere=company_data.get('business_sphere', ''),
-                object_type=object_type,
-                object_name=object_data.get('name', ''),
-                object_birth_date=self._format_date_safe(object_data.get('birth_date')),
-                object_birth_place=object_data.get('birth_place', ''),
-                object_zodiac=object_zodiac,
-                object_numerology=object_numerology
-            )
-            
-            # Отправляем запрос к OpenAI
+
             if not self.openai_client:
                 raise Exception("OpenAI клиент не инициализирован")
-            
+
+            result = self.openai_client.generate_astro_analysis(chart_data, "business_forecast")
+            logger.info(f"📊 Бизнес-прогноз для \"{company_data.get('name', '')}\" сгенерирован")
+
+            if result:
+                try:
+                    profile = load_scoring_profile("business_forecast")
+                    local_score = compute_score(result, profile)
+                    critic_feedback = self.openai_client.criticize_answer("business_forecast", result, profile)
+                    logger.info(
+                        f"📊 Локальная оценка: {local_score['score']}/10 — "
+                        f"Оценка критика: {critic_feedback.get('score', 'N/A')}/10, "
+                        f"Комментарий критика: {critic_feedback.get('comment', '')}"
+                    )
+                except Exception as me:
+                    logger.warning(f"⚠️ Не удалось вычислить метрики для business_forecast: {me}")
+                return result
+            else:
+                return "📊 Бизнес-прогноз готов. Получены стратегические рекомендации для развития компании."
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации бизнес-прогноза: {e}")
+            raise Exception(f"Ошибка генерации бизнес-прогноза: {e}")
+
+    async def analyze_compatibility(self, company_data: Dict[str, Any], object_data: Dict[str, Any], object_type: str) -> str:
+        """
+        Анализ астрологической и нумерологической совместимости компании с указанным объектом.
+
+        Args:
+            company_data (Dict): Данные компании
+            object_data (Dict): Данные объекта (человека или другой компании)
+            object_type (str): Тип объекта ("сотрудник", "клиент" или "партнер")
+
+        Returns:
+            str: Сгенерированный анализ совместимости
+        """
+        try:
+            # Знаки зодиака компании и объекта
+            company_zodiac = self._get_zodiac_safe(company_data.get('registration_date'))
+            object_zodiac = self._get_zodiac_safe(object_data.get('birth_date'))
+
+            # Нумерологическое число имени объекта
+            object_numerology = 0
+            if object_data.get('name'):
+                object_numerology = self.numerology.calculate_name_number(object_data['name'])
+
+            # Подготавливаем данные для генерации
             chart_data = {
                 "company_data": company_data,
                 "object_data": object_data,
-                "object_type": object_type
+                "object_type": object_type,
+                "company_zodiac": company_zodiac,
+                "object_zodiac": object_zodiac,
+                "object_numerology": object_numerology
             }
-            
+
+            if not self.openai_client:
+                raise Exception("OpenAI клиент не инициализирован")
+
             result = self.openai_client.generate_astro_analysis(chart_data, "compatibility")
-            logger.info(f"🤝 Анализ совместимости {object_type} завершен через OpenAI")
-            
-            return result or "🤝 Анализ совместимости завершен. Получены рекомендации по партнерским отношениям."
-            
+            logger.info(f"🤝 Анализ совместимости ({object_type}) выполнен")
+
+            if result:
+                try:
+                    profile = load_scoring_profile("compatibility")
+                    local_score = compute_score(result, profile)
+                    critic_feedback = self.openai_client.criticize_answer("compatibility", result, profile)
+                    logger.info(
+                        f"🤝 Локальная оценка: {local_score['score']}/10 — "
+                        f"Оценка критика: {critic_feedback.get('score', 'N/A')}/10, "
+                        f"Комментарий критика: {critic_feedback.get('comment', '')}"
+                    )
+                except Exception as me:
+                    logger.warning(f"⚠️ Не удалось вычислить метрики для compatibility: {me}")
+                return result
+            else:
+                return "🤝 Анализ совместимости завершён. Получены рекомендации по партнёрству."
         except Exception as e:
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА анализа совместимости: {e}")
+            logger.error(f"❌ Ошибка анализа совместимости: {e}")
             raise Exception(f"Ошибка анализа совместимости: {e}")
-    
-    async def generate_daily_forecast(self, company_data: Dict[str, Any],
-                                    daily_astrology: str = "",
-                                    today_news: str = "") -> str:
+
+    async def generate_daily_forecast(self, company_data: Dict[str, Any], daily_astrology: str = "", today_news: str = "") -> str:
         """
-        Генерация ежедневного прогноза
-        
+        Генерация ежедневного прогноза для компании.
+
         Args:
             company_data (Dict): Данные компании
-            daily_astrology (str): Астрологические данные на день
-            today_news (str): Новости дня
-            
+            daily_astrology (str): Астрологические влияния текущего дня
+            today_news (str): Краткая сводка актуальных новостей на сегодня
+
         Returns:
-            str: Ежедневный прогноз
+            str: Сгенерированный ежедневный прогноз
         """
         try:
-            # Получаем знаки зодиака
+            # Определяем знаки зодиака (компании, владельца, директора)
             company_zodiac = self._get_zodiac_safe(company_data.get('registration_date'))
             owner_zodiac = self._get_zodiac_safe(company_data.get('owner_birth_date'))
             director_zodiac = self._get_zodiac_safe(company_data.get('director_birth_date'))
-            
-            # Формируем промпт
-            prompt = DAILY_FORECAST_PROMPT.format(
-                company_name=company_data.get('name', ''),
-                company_zodiac=company_zodiac,
-                business_sphere=company_data.get('business_sphere', ''),
-                owner_zodiac=owner_zodiac,
-                director_zodiac=director_zodiac,
-                daily_astrology=daily_astrology[:1000],
-                today_news=today_news[:1500]
-            )
-            
-            # Отправляем запрос к OpenAI
-            if not self.openai_client:
-                raise Exception("OpenAI клиент не инициализирован")
-            
+
+            # Подготавливаем данные для генерации прогноза
             chart_data = {
                 "company_data": company_data,
+                "company_zodiac": company_zodiac,
+                "owner_zodiac": owner_zodiac,
+                "director_zodiac": director_zodiac,
                 "daily_astrology": daily_astrology,
-                "today_news": today_news[:1500]
+                "today_news": today_news[:1500] if today_news else ""
             }
-            
-            result = self.openai_client.generate_astro_analysis(chart_data, "daily")
-            logger.info(f"📅 Ежедневный прогноз для {company_data.get('name')} создан через OpenAI")
-            
-            return result or "📅 Ежедневный прогноз готов. Получены рекомендации на сегодняшний день."
-            
-        except Exception as e:
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА ежедневного прогноза: {e}")
-            raise Exception(f"Ошибка генерации ежедневного прогноза: {e}")
-    
-    async def generate_detailed_analysis(self, company_data: Dict[str, Any],
-                                       analysis_type: str,
-                                       astrology_data: str = "",
-                                       news_data: str = "") -> str:
-        """
-        Генерация детального анализа
-        
-        Args:
-            company_data (Dict): Данные компании
-            analysis_type (str): Тип анализа (financial/partnership/risks/three_months)
-            astrology_data (str): Астрологические данные
-            news_data (str): Новостные данные
-            
-        Returns:
-            str: Детальный анализ
-        """
-        try:
-            if analysis_type not in DETAILED_ANALYSIS_PROMPTS:
-                return "Неизвестный тип анализа."
-            
-            # Получаем шаблон промпта
-            prompt_template = DETAILED_ANALYSIS_PROMPTS[analysis_type]
-            
-            # Формируем промпт
-            prompt = prompt_template.format(
-                company_name=company_data.get('name', ''),
-                astrology_data=astrology_data[:1500],
-                news_data=news_data[:1500]
-            )
-            
-            # Отправляем запрос к OpenAI
+
             if not self.openai_client:
                 raise Exception("OpenAI клиент не инициализирован")
-            
-            chart_data = {
-                "company_data": company_data,
-                "analysis_type": analysis_type,
-                "astrology_data": astrology_data,
-                "news_data": news_data[:2000]
-            }
-            
-            result = self.openai_client.generate_astro_analysis(chart_data, "detailed")
-            logger.info(f"🔍 Детальный анализ '{analysis_type}' для {company_data.get('name')} завершен через OpenAI")
-            
-            return result or "🔍 Детальный анализ завершен. Получены глубокие инсайты для принятия решений."
-            
+
+            result = self.openai_client.generate_astro_analysis(chart_data, "daily_forecast")
+            logger.info(f"📅 Ежедневный прогноз для компании \"{company_data.get('name', '')}\" выполнен")
+
+            if result:
+                try:
+                    profile = load_scoring_profile("daily_forecast")
+                    local_score = compute_score(result, profile)
+                    critic_feedback = self.openai_client.criticize_answer("daily_forecast", result, profile)
+                    logger.info(
+                        f"📅 Локальная оценка: {local_score['score']}/10 — "
+                        f"Оценка критика: {critic_feedback.get('score', 'N/A')}/10, "
+                        f"Комментарий критика: {critic_feedback.get('comment', '')}"
+                    )
+                except Exception as me:
+                    logger.warning(f"⚠️ Не удалось вычислить метрики для daily_forecast: {me}")
+                return result
+            else:
+                return "📅 Ежедневный прогноз готов. Получены рекомендации на сегодняшний день."
         except Exception as e:
-            logger.error(f"❌ КРИТИЧЕСКАЯ ОШИБКА детального анализа: {e}")
-            raise Exception(f"Ошибка генерации детального анализа: {e}")
-    
+            logger.error(f"❌ Ошибка генерации ежедневного прогноза: {e}")
+            raise Exception(f"Ошибка генерации ежедневного прогноза: {e}")
+
     def _get_zodiac_safe(self, date_value: Any) -> str:
         """
-        Безопасное получение знака зодиака
-        
+        Безопасное определение знака зодиака по значению даты.
+
         Args:
-            date_value: Значение даты
-            
+            date_value (Any): Дата (datetime или строка)
+
         Returns:
-            str: Знак зодиака или "Не указано"
+            str: Название знака зодиака или "Неизвестно"
         """
         try:
+            if not date_value:
+                return "Неизвестно"
             if isinstance(date_value, str):
-                # Попробуем разные форматы даты
-                formats = ['%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%dT%H:%M:%S']
-                date_obj = None
-                for fmt in formats:
+                # Парсим строковую дату в datetime, если возможно
+                for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%dT%H:%M:%S'):
                     try:
-                        date_obj = datetime.strptime(date_value, fmt)
+                        date_value = datetime.strptime(date_value, fmt)
                         break
                     except ValueError:
                         continue
-                
-                if date_obj is None:
-                    # Если не удалось распарсить, попробуем ISO формат
-                    date_obj = datetime.fromisoformat(date_value)
-                    
-            elif isinstance(date_value, datetime):
-                date_obj = date_value
-            else:
-                return "Не указано"
-            
-            return get_zodiac_sign(date_obj)
-            
-        except (ValueError, AttributeError, TypeError):
-            return "Не указано"
-    
-    def _format_date_safe(self, date_value: Any) -> str:
-        """
-        Безопасное форматирование даты
-        
-        Args:
-            date_value: Значение даты
-            
-        Returns:
-            str: Отформатированная дата или "Не указано"
-        """
-        try:
-            if isinstance(date_value, str):
-                # Попробуем разные форматы даты
-                formats = ['%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%dT%H:%M:%S']
-                date_obj = None
-                for fmt in formats:
-                    try:
-                        date_obj = datetime.strptime(date_value, fmt)
-                        break
-                    except ValueError:
-                        continue
-                
-                if date_obj is None:
-                    # Если не удалось распарсить, попробуем ISO формат
-                    date_obj = datetime.fromisoformat(date_value)
-                    
-            elif isinstance(date_value, datetime):
-                date_obj = date_value
-            else:
-                return "Не указано"
-            
-            return date_obj.strftime('%d.%m.%Y')
-            
-        except (ValueError, AttributeError, TypeError):
-            return "Не указано"
-    
-    async def get_numerological_insights(self, company_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Получение нумерологических инсайтов
-        
-        Args:
-            company_data (Dict): Данные компании
-            
-        Returns:
-            Dict[str, Any]: Нумерологические инсайты
-        """
-        try:
-            insights = {}
-            
-            # Анализ названия компании
-            if company_data.get('name'):
-                company_number = self.numerology.calculate_name_number(
-                    company_data['name']
-                )
-                insights['company_numerology'] = {
-                    'number': company_number,
-                    'analysis': self.numerology.generate_business_recommendations(
-                        company_number, 
-                        company_data.get('business_sphere', '')
-                    )
-                }
-            
-            # Анализ собственника
-            if company_data.get('owner_name'):
-                owner_number = self.numerology.calculate_name_number(
-                    company_data['owner_name']
-                )
-                insights['owner_numerology'] = {
-                    'number': owner_number,
-                    'meaning': self.numerology.get_number_meaning(owner_number)
-                }
-            
-            # Анализ руководителя
-            if company_data.get('director_name'):
-                director_number = self.numerology.calculate_name_number(
-                    company_data['director_name']
-                )
-                insights['director_numerology'] = {
-                    'number': director_number,
-                    'meaning': self.numerology.get_number_meaning(director_number)
-                }
-            
-            logger.info(f"🔢 Нумерологические инсайты для {company_data.get('name')} получены")
-            return insights
-            
-        except Exception as e:
-            logger.warning(f"⚠️ Нумерологические инсайты недоступны: {type(e).__name__}")
-            return {}
+                if isinstance(date_value, str):
+                    return "Неизвестно"
+            # Теперь date_value гарантированно datetime
+            return get_zodiac_sign(date_value) or "Неизвестно"
+        except Exception:
+            return "Неизвестно"
