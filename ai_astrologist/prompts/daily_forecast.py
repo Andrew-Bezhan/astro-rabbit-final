@@ -28,3 +28,5 @@ DAILY_FORECAST_PROMPT = """
 SELF-SCORE: X.Y/10
 ПОЧЕМУ: кратко.
 """
+
+

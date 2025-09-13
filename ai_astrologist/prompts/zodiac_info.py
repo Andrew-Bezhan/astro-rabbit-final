@@ -19,3 +19,5 @@ COMPANY_ZODIAC_INFO_PROMPT = """
 SELF-SCORE: X.Y/10
 ПОЧЕМУ: кратко.
 """
+
+
