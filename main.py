@@ -63,10 +63,15 @@ async def main():
         logger.info("✅ Астробот успешно запущен!")
         
         # Держим приложение запущенным
-        await asyncio.Event().wait()
+        stop_event = asyncio.Event()
         
-    except KeyboardInterrupt:
-        logger.info("⏹️ Получен сигнал остановки...")
+        # Ждем сигнал остановки
+        try:
+            await stop_event.wait()
+        except KeyboardInterrupt:
+            logger.info("⏹️ Получен сигнал остановки (Ctrl+C)")
+            stop_event.set()
+        
     except Exception as e:
         logger.error(f"❌ Ошибка при запуске бота: {e}")
     finally:
