@@ -7,6 +7,7 @@ OpenAI API клиент для астрологических вычислени
 import os
 from typing import Dict, Any, Optional, Union
 from datetime import datetime
+from pytz import UTC
 import json
 
 try:

@@ -5,6 +5,7 @@
 import asyncio
 from typing import Dict, Any
 from datetime import datetime
+from pytz import UTC
 from telegram import Update, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CallbackContext
 
@@ -1376,7 +1377,7 @@ class BotHandlers:
         
         forecast = f"""🌟 ПОЛНЫЙ БИЗНЕС-ПРОГНОЗ
 🏢 Компания: "{user_data.company_name}"
-📅 Анализ на: {datetime.now().strftime('%d.%m.%Y')}
+📅 Анализ на: {datetime.now(UTC).strftime('%d.%m.%Y')}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2436,7 +2437,7 @@ class BotHandlers:
                         input_data={
                             'company_id': company_data.get('id', 0),
                             'company_name': company_data.get('name', ''),
-                            'analysis_timestamp': datetime.now().isoformat()
+                            'analysis_timestamp': datetime.now(UTC).isoformat()
                         },
                         zodiac_signs=[],
                         news_used=True,

@@ -4,6 +4,7 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from pytz import UTC
 
 from .qdrant_client import QdrantClient
 from utils.config import load_config
@@ -42,7 +43,7 @@ class EmbeddingManager:
             )
             
             logger.info(f"💬 Диалог пользователя {user_id} сохранен: {doc_id}")
-            return doc_id or f"dialog_{user_id}_{int(datetime.now().timestamp())}"
+            return doc_id or f"dialog_{user_id}_{int(datetime.now(UTC).timestamp())}"
             
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения диалога пользователя {user_id}: {e}")
@@ -70,7 +71,7 @@ class EmbeddingManager:
             )
             
             logger.info(f"🔮 Прогноз для {company_info.get('name', 'Unknown')} сохранен: {doc_id}")
-            return doc_id or f"prediction_{company_info.get('user_id', 0)}_{int(datetime.now().timestamp())}"
+            return doc_id or f"prediction_{company_info.get('user_id', 0)}_{int(datetime.now(UTC).timestamp())}"
             
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения прогноза: {e}")
@@ -103,7 +104,7 @@ class EmbeddingManager:
             )
             
             logger.info(f"📰 Новость '{title[:50]}...' сохранена: {doc_id}")
-            return doc_id or f"news_{category}_{int(datetime.now().timestamp())}"
+            return doc_id or f"news_{category}_{int(datetime.now(UTC).timestamp())}"
             
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения новости: {e}")
@@ -161,7 +162,7 @@ class EmbeddingManager:
             query = sphere_keywords.get(company_sphere, company_sphere)
             
             # Фильтр по времени
-            cutoff_date = (datetime.now() - timedelta(days=days_back)).isoformat()
+            cutoff_date = (datetime.now(UTC) - timedelta(days=days_back)).isoformat()
             
             results = await self.qdrant_client.search_similar_results(
                 query=query

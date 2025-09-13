@@ -4,6 +4,7 @@
 
 import re
 from datetime import datetime
+from pytz import UTC
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 

@@ -5,8 +5,10 @@
 import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-import schedule
 import threading
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from pytz import UTC
 import time
 
 from .newsdata_client import NewsDataClient
@@ -97,7 +99,7 @@ class NewsAnalyzer:
             # Формируем расширенную сводку
             digest_parts = [
                 "🌅 **ЕЖЕДНЕВНАЯ СВОДКА НОВОСТЕЙ**",
-                f"📅 {datetime.now().strftime('%d.%m.%Y')}",
+                f"📅 {datetime.now(UTC).strftime('%d.%m.%Y')}",
                 "",
                 summary
             ]
@@ -126,8 +128,30 @@ class NewsAnalyzer:
             # Настраиваем расписание
             schedule.clear()  # Очищаем предыдущие задачи
             
-            # Парсинг в 07:00 утра
-            schedule.every().day.at("07:00").do(self._scheduled_news_parsing)
+            # Парсинг в 07:00 утра UTC
+            # Создаем и настраиваем планировщик с явным указанием UTC
+            from apscheduler.schedulers.background import BackgroundScheduler
+            from apscheduler.triggers.cron import CronTrigger
+            
+            import pytz
+            # Создаем планировщик без конфигурации
+            scheduler = BackgroundScheduler()
+            # Устанавливаем часовой пояс после инициализации
+            scheduler.timezone = pytz.timezone('UTC')
+            
+            # Создаем триггер с явным указанием часового пояса
+            trigger = CronTrigger(
+                hour=7, 
+                minute=0, 
+                timezone=pytz.timezone('UTC')
+            )
+            
+            # Добавляем задачу
+            scheduler.add_job(
+                self._scheduled_news_parsing,
+                trigger=trigger
+            )
+            scheduler.start()
             
             # Запускаем планировщик в отдельном потоке
             self.is_running = True
@@ -157,7 +181,6 @@ class NewsAnalyzer:
         """Запуск планировщика в отдельном потоке"""
         while self.is_running:
             try:
-                schedule.run_pending()
                 time.sleep(60)  # Проверяем каждую минуту
             except Exception as e:
                 logger.error(f"❌ Ошибка в планировщике: {e}")

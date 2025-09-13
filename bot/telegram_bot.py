@@ -10,8 +10,11 @@ from telegram.ext import (
     MessageHandler, 
     CallbackQueryHandler,
     filters,
-    ContextTypes
+    ContextTypes,
+    Defaults
 )
+from .custom_job_queue import CustomJobQueue
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .handlers import BotHandlers
 from utils.config import load_config
@@ -33,8 +36,21 @@ class AstroBot:
             logger.error("❌ Отсутствует токен Telegram бота в .env файле")
             raise ValueError("Telegram bot token is required")
         
-        # Создаем приложение сразу в конструкторе
-        self.application = Application.builder().token(self.config.bot.token).build()
+        # Создаем приложение сразу в конструкторе с явным указанием часового пояса
+        import pytz
+        
+        # Создаем кастомный JobQueue с правильными настройками часового пояса
+        job_queue = CustomJobQueue()
+        
+        # Создаем приложение с явными настройками
+        self.application = (
+            Application.builder()
+            .token(self.config.bot.token)
+            .defaults(Defaults(tzinfo=pytz.utc))
+            .arbitrary_callback_data(True)
+            .job_queue(job_queue)
+            .build()
+        )
         
         logger.info("🤖 AstroBot инициализирован")
     
@@ -346,7 +362,7 @@ class AstroBot:
                 from datetime import datetime
                 forecast = f"""
 🌅 **ЕЖЕДНЕВНЫЙ ПРОГНОЗ**
-📅 {datetime.now().strftime('%d.%m.%Y')}
+📅 {datetime.now(UTC).strftime('%d.%m.%Y')}
 
 🏢 Компания: {company_data.get('name', 'Не указано')}
 

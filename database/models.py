@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, Float, Boolean, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from pytz import UTC
 from typing import Dict, Any, Optional
 
 Base = declarative_base()
@@ -22,14 +23,14 @@ class User(Base):
     last_name = Column(String(255), nullable=True)
     
     # Личные данные для астрологического анализа
-    birth_date = Column(DateTime, nullable=True)
+    birth_date = Column(DateTime(timezone=True), nullable=True)
     birth_place = Column(String(255), nullable=True)
     birth_time = Column(String(10), nullable=True)  # HH:MM формат
     zodiac_sign = Column(String(50), nullable=True)
     
     # Метаданные
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)
     language = Column(String(10), default='ru')
     
@@ -55,7 +56,7 @@ class Company(Base):
     ogrn = Column(String(20), nullable=True)
     
     # Данные регистрации для астрологического анализа
-    registration_date = Column(DateTime, nullable=False)
+    registration_date = Column(DateTime(timezone=True), nullable=False)
     registration_place = Column(String(255), nullable=False)
     registration_time = Column(String(10), nullable=True)  # HH:MM формат
     
@@ -80,9 +81,9 @@ class Company(Base):
     
     # Данные руководства
     owner_name = Column(String(255), nullable=True)
-    owner_birth_date = Column(DateTime, nullable=True)
+    owner_birth_date = Column(DateTime(timezone=True), nullable=True)
     director_name = Column(String(255), nullable=True)
-    director_birth_date = Column(DateTime, nullable=True)
+    director_birth_date = Column(DateTime(timezone=True), nullable=True)
     
     # Натальная карта (JSON)
     natal_chart = Column(JSON, nullable=True)
@@ -128,7 +129,7 @@ class Analysis(Base):
     astrology_api_used = Column(Boolean, default=False)
     
     # Метаданные
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     processing_time = Column(Float, nullable=True)  # Время обработки в секундах
     
     # Связи
@@ -152,8 +153,8 @@ class NewsCache(Base):
     news_data = Column(JSON, nullable=False)
     
     # Метаданные
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     
     def __repr__(self):
         return f"<NewsCache(key={self.cache_key})>"
@@ -171,9 +172,9 @@ class UserSession(Base):
     session_data = Column(JSON, nullable=True)  # Временные данные
     
     # Метаданные
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
     
     # Связи
     user = relationship("User")
@@ -198,7 +199,7 @@ class SystemLog(Base):
     extra_data = Column(JSON, nullable=True)
     
     # Метаданные
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     # Связи
     user = relationship("User")

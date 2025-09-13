@@ -73,7 +73,8 @@ async def main():
             stop_event.set()
         
     except Exception as e:
-        logger.error(f"❌ Ошибка при запуске бота: {e}")
+        import traceback
+        logger.error(f"❌ Ошибка при запуске бота: {e}\n{traceback.format_exc()}")
     finally:
         if bot:
             await bot.stop()

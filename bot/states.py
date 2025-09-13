@@ -5,6 +5,7 @@
 from enum import Enum, auto
 from typing import Optional, Dict
 from datetime import datetime
+from pytz import UTC
 
 
 class BotState(Enum):

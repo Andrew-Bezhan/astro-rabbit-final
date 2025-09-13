@@ -7,6 +7,7 @@ import os
 import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+from pytz import UTC
 from utils.logger import setup_logger
 
 logger = setup_logger()
@@ -134,20 +135,20 @@ class QdrantClient:
         """ОБЯЗАТЕЛЬНОЕ сохранение всех астропрогнозов согласно ТЗ"""
         # In-memory режим
         if hasattr(self, '_memory_storage'):
-            point_id = f"memory_{user_id}_{analysis_type}_{int(datetime.now().timestamp())}"
+            point_id = f"memory_{user_id}_{analysis_type}_{int(datetime.now(UTC).timestamp())}"
             self._memory_storage[point_id] = {
                 'user_id': user_id,
                 'company_name': company_name,
                 'analysis_type': analysis_type,
                 'result': result,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(UTC).isoformat()
             }
             logger.info(f"🧠 Результат сохранен в памяти: {point_id}")
             return point_id
         
         if not self.client:
             logger.warning("⚠️ Qdrant недоступен, результат не сохранен в векторной БД")
-            return f"local_{user_id}_{analysis_type}_{int(datetime.now().timestamp())}"
+            return f"local_{user_id}_{analysis_type}_{int(datetime.now(UTC).timestamp())}"
             
         try:
             # Создаем embedding результата через Gemini или OpenAI
@@ -199,7 +200,7 @@ class QdrantClient:
                     "company_name": company_name,
                     "analysis_type": analysis_type,
                     "result_preview": result[:500],
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "full_result": result
                 }
             )
@@ -217,7 +218,7 @@ class QdrantClient:
             
         except Exception as e:
             logger.error(f"❌ Qdrant сохранение ОБЯЗАТЕЛЬНО согласно ТЗ: {e}")
-            return f"error_{user_id}_{analysis_type}_{int(datetime.now().timestamp())}"
+            return f"error_{user_id}_{analysis_type}_{int(datetime.now(UTC).timestamp())}"
     
     async def search_similar_results(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Поиск похожих результатов"""

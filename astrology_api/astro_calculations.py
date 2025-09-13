@@ -4,6 +4,7 @@
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+from pytz import UTC
 import math
 
 from .gpt_astro_client import GPTAstroClient
@@ -387,7 +388,7 @@ class AstroCalculations:
                 return self._get_basic_transits()
             
             registration_date = datetime.fromisoformat(
-                company_chart.get('registration_date', datetime.now().isoformat())
+                company_chart.get('registration_date', datetime.now(UTC).isoformat())
             )
             coordinates = company_chart.get('coordinates', {'latitude': 55.7558, 'longitude': 37.6176})
             
@@ -407,7 +408,7 @@ class AstroCalculations:
     def _get_basic_transits(self) -> Dict[str, Any]:
         """Базовые транзиты без API"""
         return {
-            'current_date': datetime.now().isoformat(),
+            'current_date': datetime.now(UTC).isoformat(),
             'general_influence': 'Период благоприятен для планирования и анализа',
             'business_opportunities': 'Время для укрепления позиций и развития партнерств',
             'potential_challenges': 'Возможны задержки в коммуникациях',

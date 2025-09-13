@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
+from pytz import UTC
 import json
 
 from .models import User, Company, Analysis, NewsCache, UserSession, SystemLog

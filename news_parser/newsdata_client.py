@@ -6,6 +6,7 @@ import requests
 import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from pytz import UTC
 import json
 
 from utils.config import load_config
