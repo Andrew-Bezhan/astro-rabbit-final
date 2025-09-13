@@ -4,18 +4,14 @@
 
 from telegram.ext import JobQueue as TelegramJobQueue
 import pytz
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 class CustomJobQueue(TelegramJobQueue):
     """Кастомная реализация JobQueue с явным указанием часового пояса"""
     
     def __init__(self):
-        # Создаем scheduler с правильной конфигурацией timezone
-        scheduler = AsyncIOScheduler(
-            timezone=pytz.UTC,  # Используем pytz timezone
-            job_defaults={
-                'coalesce': True,
-                'max_instances': 1
-            }
-        )
-        super().__init__(scheduler=scheduler)
+        # В новой версии python-telegram-bot просто инициализируем базовый класс
+        super().__init__()
+        
+        # Настраиваем timezone для scheduler после инициализации
+        if hasattr(self, 'scheduler'):
+            self.scheduler.configure(timezone=pytz.UTC)
