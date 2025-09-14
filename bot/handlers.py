@@ -2657,8 +2657,8 @@ class BotHandlers:
             if self.validator:
                 try:
                     # Получаем оригинальный промпт для валидации
-                    from ai_astrologist.prompts import COMPANY_ZODIAC_PROMPT
-                    original_prompt = COMPANY_ZODIAC_PROMPT
+                    from ai_astrologist.prompts import COMPANY_ZODIAC_INFO_PROMPT
+                    original_prompt = COMPANY_ZODIAC_INFO_PROMPT
                     logger.info("🔍 ЗАПУСКАЕМ ANTHROPIC ВАЛИДАЦИЮ...")
                     logger.info("🎯 Цель: минимум 7 баллов из 10")
                     
