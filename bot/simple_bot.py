@@ -222,13 +222,8 @@ class SimpleAstroBot:
             
             logger.info("🚀 Запуск упрощенного Telegram бота...")
             
-            # Инициализируем и запускаем
-            await app.initialize()
-            await app.start()
-            
-            # Запускаем polling
-            if app.updater:
-                await app.updater.start_polling(drop_pending_updates=True)
+            # Запускаем polling (правильный API для версии 20.7)
+            await app.run_polling(drop_pending_updates=True)
             
             logger.info("✅ Упрощенный Астробот запущен! Нажмите Ctrl+C для остановки.")
             

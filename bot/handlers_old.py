@@ -9,9 +9,16 @@ from telegram import Update, ReplyKeyboardRemove, InlineKeyboardMarkup, InlineKe
 from telegram.ext import ContextTypes, CallbackContext
 
 from .keyboards import BotKeyboards
+from .keyboards import create_forecast_options_keyboard
 from .states import BotState, StateManager
 from ai_astrologist.astro_agent import AstroAgent
 from ai_astrologist.numerology import NumerologyCalculator
+from ai_astrologist.prompts import (
+    QUICK_FORECAST_PROMPT, 
+    FINANCIAL_FORECAST_PROMPT, 
+    PARTNERSHIP_FORECAST_PROMPT, 
+    RISK_FORECAST_PROMPT
+)
 from news_parser.news_analyzer import NewsAnalyzer
 from embedding.embedding_manager import EmbeddingManager
 from utils.helpers import validate_date, clean_company_name, is_valid_russian_name
@@ -1104,6 +1111,19 @@ class BotHandlers:
         elif callback_data.startswith("next_part_"):
             part_index = int(callback_data.replace("next_part_", ""))
             await self._show_next_analysis_part(update, context, part_index)
+        
+        # Обработка дополнительных опций прогноза
+        elif callback_data == "forecast_quick":
+            await self._handle_quick_forecast(update, context)
+        
+        elif callback_data == "forecast_financial":
+            await self._handle_financial_forecast(update, context)
+        
+        elif callback_data == "forecast_partnership":
+            await self._handle_partnership_forecast(update, context)
+        
+        elif callback_data == "forecast_risk":
+            await self._handle_risk_forecast(update, context)
         
         else:
             await query.edit_message_text(
@@ -2553,8 +2573,11 @@ class BotHandlers:
         if current_index < total_parts:
             # Есть еще части
             keyboard.append([InlineKeyboardButton("📄 Следующая часть", callback_data=f"next_part_{current_index + 1}")])
-        # Последняя часть - просто кнопка назад
+        elif analysis_type == 'forecast':
+            # Последняя часть бизнес-прогноза - показываем кнопки дополнительных опций
+            keyboard.extend(create_forecast_options_keyboard().inline_keyboard)
         
+        # Кнопка назад всегда есть
         keyboard.append([InlineKeyboardButton("🔙 К действиям с компанией", callback_data="back_to_company_actions")])
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -2856,11 +2879,11 @@ class BotHandlers:
             text_parts = self._split_long_text(forecast_result)
             
             if len(text_parts) == 1:
-                # Короткий текст - отправляем как есть
+                # Короткий текст - отправляем как есть с кнопками дополнительных опций
                 await query.edit_message_text(
                     f"<b>📈 БИЗНЕС-ПРОГНОЗ КОМПАНИИ</b>\n\n{forecast_result}",
                     parse_mode='HTML',
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 К действиям с компанией", callback_data="back_to_company_actions")]])
+                    reply_markup=create_forecast_options_keyboard()
                 )
             else:
                 # Длинный текст - разбиваем на части
@@ -3035,5 +3058,233 @@ class BotHandlers:
             logger.error(f"❌ Ошибка возврата к действиям с компанией: {e}")
             await query.edit_message_text(
                 f"❌ Ошибка: {str(e)}",
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+
+    async def _handle_quick_forecast(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик быстрого прогноза на 3 месяца"""
+        if not update.callback_query or not update.effective_user:
+            return
+            
+        user_id = update.effective_user.id
+        query = update.callback_query
+        
+        try:
+            # Получаем данные активной компании
+            user_data = self.state_manager.get_user_data(user_id)
+            active_company_id = user_data.get('active_company_id')
+            
+            if not active_company_id:
+                await query.edit_message_text(
+                    "❌ Сначала выберите активную компанию.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Получаем данные компании из базы
+            company_data = await self._get_company_data(user_id, active_company_id)
+            if not company_data:
+                await query.edit_message_text(
+                    "❌ Данные компании не найдены.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Показываем индикатор загрузки
+            await query.edit_message_text("🚀 Генерирую быстрый прогноз на 3 месяца...")
+            
+            # Получаем новости и астрологические данные
+            news_data = await self._get_news_data()
+            daily_astrology = await self._get_daily_astrology()
+            
+            # Генерируем прогноз
+            forecast_result = await self.astro_agent.generate_forecast(
+                prompt=QUICK_FORECAST_PROMPT,
+                company_data=company_data,
+                news_data=news_data,
+                daily_astrology=daily_astrology
+            )
+            
+            # Отправляем результат
+            await query.edit_message_text(
+                forecast_result,
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации быстрого прогноза: {e}")
+            await query.edit_message_text(
+                f"❌ Ошибка генерации прогноза: {str(e)}",
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+
+    async def _handle_financial_forecast(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик прогноза финансов"""
+        if not update.callback_query or not update.effective_user:
+            return
+            
+        user_id = update.effective_user.id
+        query = update.callback_query
+        
+        try:
+            # Получаем данные активной компании
+            user_data = self.state_manager.get_user_data(user_id)
+            active_company_id = user_data.get('active_company_id')
+            
+            if not active_company_id:
+                await query.edit_message_text(
+                    "❌ Сначала выберите активную компанию.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Получаем данные компании из базы
+            company_data = await self._get_company_data(user_id, active_company_id)
+            if not company_data:
+                await query.edit_message_text(
+                    "❌ Данные компании не найдены.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Показываем индикатор загрузки
+            await query.edit_message_text("💰 Генерирую финансовый прогноз...")
+            
+            # Получаем новости и астрологические данные
+            news_data = await self._get_news_data()
+            daily_astrology = await self._get_daily_astrology()
+            
+            # Генерируем прогноз
+            forecast_result = await self.astro_agent.generate_forecast(
+                prompt=FINANCIAL_FORECAST_PROMPT,
+                company_data=company_data,
+                news_data=news_data,
+                daily_astrology=daily_astrology
+            )
+            
+            # Отправляем результат
+            await query.edit_message_text(
+                forecast_result,
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации финансового прогноза: {e}")
+            await query.edit_message_text(
+                f"❌ Ошибка генерации прогноза: {str(e)}",
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+
+    async def _handle_partnership_forecast(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик прогноза партнерства"""
+        if not update.callback_query or not update.effective_user:
+            return
+            
+        user_id = update.effective_user.id
+        query = update.callback_query
+        
+        try:
+            # Получаем данные активной компании
+            user_data = self.state_manager.get_user_data(user_id)
+            active_company_id = user_data.get('active_company_id')
+            
+            if not active_company_id:
+                await query.edit_message_text(
+                    "❌ Сначала выберите активную компанию.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Получаем данные компании из базы
+            company_data = await self._get_company_data(user_id, active_company_id)
+            if not company_data:
+                await query.edit_message_text(
+                    "❌ Данные компании не найдены.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Показываем индикатор загрузки
+            await query.edit_message_text("🤝 Генерирую прогноз партнерства...")
+            
+            # Получаем новости и астрологические данные
+            news_data = await self._get_news_data()
+            daily_astrology = await self._get_daily_astrology()
+            
+            # Генерируем прогноз
+            forecast_result = await self.astro_agent.generate_forecast(
+                prompt=PARTNERSHIP_FORECAST_PROMPT,
+                company_data=company_data,
+                news_data=news_data,
+                daily_astrology=daily_astrology
+            )
+            
+            # Отправляем результат
+            await query.edit_message_text(
+                forecast_result,
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации прогноза партнерства: {e}")
+            await query.edit_message_text(
+                f"❌ Ошибка генерации прогноза: {str(e)}",
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+
+    async def _handle_risk_forecast(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработчик прогноза рисков"""
+        if not update.callback_query or not update.effective_user:
+            return
+            
+        user_id = update.effective_user.id
+        query = update.callback_query
+        
+        try:
+            # Получаем данные активной компании
+            user_data = self.state_manager.get_user_data(user_id)
+            active_company_id = user_data.get('active_company_id')
+            
+            if not active_company_id:
+                await query.edit_message_text(
+                    "❌ Сначала выберите активную компанию.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Получаем данные компании из базы
+            company_data = await self._get_company_data(user_id, active_company_id)
+            if not company_data:
+                await query.edit_message_text(
+                    "❌ Данные компании не найдены.",
+                    reply_markup=self.keyboards.get_back_inline_button()
+                )
+                return
+            
+            # Показываем индикатор загрузки
+            await query.edit_message_text("⚠️ Генерирую прогноз рисков...")
+            
+            # Получаем новости и астрологические данные
+            news_data = await self._get_news_data()
+            daily_astrology = await self._get_daily_astrology()
+            
+            # Генерируем прогноз
+            forecast_result = await self.astro_agent.generate_forecast(
+                prompt=RISK_FORECAST_PROMPT,
+                company_data=company_data,
+                news_data=news_data,
+                daily_astrology=daily_astrology
+            )
+            
+            # Отправляем результат
+            await query.edit_message_text(
+                forecast_result,
+                reply_markup=self.keyboards.get_back_inline_button()
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка генерации прогноза рисков: {e}")
+            await query.edit_message_text(
+                f"❌ Ошибка генерации прогноза: {str(e)}",
                 reply_markup=self.keyboards.get_back_inline_button()
             )

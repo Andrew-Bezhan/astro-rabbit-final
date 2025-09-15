@@ -12,6 +12,10 @@ from .business_forecast import BUSINESS_FORECAST_PROMPT
 from .compatibility import COMPATIBILITY_PROMPT
 from .daily_forecast import DAILY_FORECAST_PROMPT
 from .critic_prompt import CRITIC_PROMPT
+from .quick_forecast import QUICK_FORECAST_PROMPT
+from .financial_forecast import FINANCIAL_FORECAST_PROMPT
+from .partnership_forecast import PARTNERSHIP_FORECAST_PROMPT
+from .risk_forecast import RISK_FORECAST_PROMPT
 
 __all__ = [
     "ASTRO_RABBIT_SYSTEM_PROMPT",
@@ -21,4 +25,8 @@ __all__ = [
     "COMPATIBILITY_PROMPT",
     "DAILY_FORECAST_PROMPT",
     "CRITIC_PROMPT",
+    "QUICK_FORECAST_PROMPT",
+    "FINANCIAL_FORECAST_PROMPT",
+    "PARTNERSHIP_FORECAST_PROMPT",
+    "RISK_FORECAST_PROMPT",
 ]
