@@ -536,6 +536,18 @@ class CompanyHandler(BaseHandler):
                 )
                 return
             
+            # Автоматически генерируем анализ знака зодиака компании (согласно спецификации)
+            try:
+                logger.info(f"🔮 Генерируем автоматический анализ для компании: {company['name']}")
+                zodiac_analysis = await self.astro_agent.analyze_company_zodiac(
+                    company_info=company,
+                    news_data=""
+                )
+                zodiac_preview = zodiac_analysis[:200] + "..." if len(zodiac_analysis) > 200 else zodiac_analysis
+            except Exception as e:
+                logger.error(f"❌ Ошибка анализа компании: {e}")
+                zodiac_preview = "Анализ будет доступен в разделе прогнозов."
+            
             # Сбрасываем состояние
             self.state_manager.set_user_state(user_id, BotState.MAIN_MENU)
             context.user_data.pop('adding_company', None)
@@ -549,9 +561,11 @@ class CompanyHandler(BaseHandler):
                 f"🏭 Сфера деятельности: {company['industry']}\n"
                 f"👤 Собственник: {company['owner_name']}\n"
                 f"👔 Директор: {company['director_name']}\n\n"
-                "Компания сохранена и готова для анализа!",
+                f"🔮 <b>Краткий анализ:</b>\n{zodiac_preview}\n\n"
+                "Компания сохранена и проанализирована!",
                 parse_mode='HTML',
                 reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("📊 Полный анализ", callback_data=f"analyze_company_{company['id']}")],
                     [InlineKeyboardButton("🏢 Мои компании", callback_data="companies_menu")],
                     [InlineKeyboardButton("🔙 Главное меню", callback_data="back_to_main_menu")]
                 ])
@@ -561,6 +575,84 @@ class CompanyHandler(BaseHandler):
             logger.error(f"❌ Ошибка обработки даты рождения директора: {e}")
             await update.message.reply_text(
                 f"❌ Ошибка: {str(e)}",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔙 К компаниям", callback_data="companies_menu")]
+                ])
+            )
+    
+    async def analyze_company(self, update: Update, context: ContextTypes.DEFAULT_TYPE, company_id: str):
+        """Полный анализ компании по ID"""
+        if not update.callback_query or not update.effective_user:
+            return
+            
+        user_id = update.effective_user.id
+        query = update.callback_query
+        
+        try:
+            # Получаем данные компании
+            company_data = await self._get_company_data(user_id, company_id)
+            if not company_data:
+                await query.edit_message_text(
+                    "❌ Данные компании не найдены.",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🔙 К компаниям", callback_data="companies_menu")]
+                    ])
+                )
+                return
+            
+            # Показываем индикатор загрузки
+            await query.edit_message_text("🔮 Генерирую полный астрологический анализ компании...")
+            
+            # Генерируем полный анализ
+            full_analysis = await self.astro_agent.analyze_company_zodiac(
+                company_info=company_data,
+                news_data=""
+            )
+            
+            # Показываем результат (разбиваем на части если слишком длинный)
+            if len(full_analysis) > 4000:
+                # Разбиваем на части по 4000 символов
+                parts = [full_analysis[i:i+4000] for i in range(0, len(full_analysis), 4000)]
+                
+                for i, part in enumerate(parts):
+                    if i == 0:
+                        await query.edit_message_text(
+                            f"🔮 <b>ПОЛНЫЙ АНАЛИЗ КОМПАНИИ</b>\n\n"
+                            f"🏢 <b>{company_data['name']}</b>\n\n"
+                            f"{part}",
+                            parse_mode='HTML'
+                        )
+                    else:
+                        await update.effective_chat.send_message(
+                            f"<i>Продолжение анализа (часть {i+1}):</i>\n\n{part}",
+                            parse_mode='HTML'
+                        )
+                
+                # Кнопки только в последнем сообщении
+                await update.effective_chat.send_message(
+                    "📊 <b>Анализ завершен!</b>",
+                    parse_mode='HTML',
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🏢 Мои компании", callback_data="companies_menu")],
+                        [InlineKeyboardButton("🔙 Главное меню", callback_data="back_to_main_menu")]
+                    ])
+                )
+            else:
+                await query.edit_message_text(
+                    f"🔮 <b>ПОЛНЫЙ АНАЛИЗ КОМПАНИИ</b>\n\n"
+                    f"🏢 <b>{company_data['name']}</b>\n\n"
+                    f"{full_analysis}",
+                    parse_mode='HTML',
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton("🏢 Мои компании", callback_data="companies_menu")],
+                        [InlineKeyboardButton("🔙 Главное меню", callback_data="back_to_main_menu")]
+                    ])
+                )
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка анализа компании: {e}")
+            await query.edit_message_text(
+                f"❌ Ошибка при анализе компании: {str(e)}",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔙 К компаниям", callback_data="companies_menu")]
                 ])

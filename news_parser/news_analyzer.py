@@ -26,7 +26,7 @@ class NewsAnalyzer:
         self.news_client = NewsDataClient()
         self.embedding_manager = EmbeddingManager()
         self.is_running = False
-        self.scheduler_thread = None
+        self.scheduler = None  # APScheduler instance
         
         logger.info("📊 NewsAnalyzer инициализирован")
     
@@ -125,40 +125,42 @@ class NewsAnalyzer:
                 logger.warning("⚠️ Парсер новостей уже запущен")
                 return
             
-            # Настраиваем расписание
-            schedule.clear()  # Очищаем предыдущие задачи
-            
             # Парсинг в 07:00 утра UTC
-            # Создаем и настраиваем планировщик с явным указанием UTC
+            # Используем правильную конфигурацию APScheduler для python-telegram-bot v20.7+
             from apscheduler.schedulers.background import BackgroundScheduler
             from apscheduler.triggers.cron import CronTrigger
-            
             import pytz
-            # Создаем планировщик без конфигурации
-            scheduler = BackgroundScheduler()
-            # Устанавливаем часовой пояс после инициализации
-            scheduler.timezone = pytz.timezone('UTC')
+            
+            # Создаем планировщик с правильной конфигурацией timezone
+            self.scheduler = BackgroundScheduler(
+                timezone=pytz.UTC,  # Используем pytz.UTC вместо строки
+                job_defaults={
+                    'coalesce': False,
+                    'max_instances': 1,
+                    'misfire_grace_time': 30
+                }
+            )
             
             # Создаем триггер с явным указанием часового пояса
             trigger = CronTrigger(
                 hour=7, 
                 minute=0, 
-                timezone=pytz.timezone('UTC')
+                timezone=pytz.UTC  # Используем pytz.UTC вместо строки
             )
             
             # Добавляем задачу
-            scheduler.add_job(
+            self.scheduler.add_job(
                 self._scheduled_news_parsing,
-                trigger=trigger
+                trigger=trigger,
+                id='daily_news_parsing',  # Добавляем ID для уникальности
+                replace_existing=True
             )
-            scheduler.start()
             
-            # Запускаем планировщик в отдельном потоке
+            # Запускаем планировщик
+            self.scheduler.start()
             self.is_running = True
-            self.scheduler_thread = threading.Thread(target=self._run_scheduler, daemon=True)
-            self.scheduler_thread.start()
             
-            logger.info("⏰ Ежедневный парсер новостей запущен (07:00)")
+            logger.info("⏰ Ежедневный парсер новостей запущен (07:00 UTC)")
             
         except Exception as e:
             logger.error(f"❌ Ошибка запуска ежедневного парсера: {e}")
@@ -167,10 +169,11 @@ class NewsAnalyzer:
         """Остановка ежедневного парсинга"""
         try:
             self.is_running = False
-            schedule.clear()
             
-            if self.scheduler_thread and self.scheduler_thread.is_alive():
-                self.scheduler_thread.join(timeout=5)
+            # Останавливаем планировщик APScheduler
+            if hasattr(self, 'scheduler') and self.scheduler:
+                self.scheduler.shutdown(wait=False)
+                logger.info("📊 APScheduler остановлен")
             
             logger.info("⏹️ Ежедневный парсер новостей остановлен")
             
@@ -178,13 +181,8 @@ class NewsAnalyzer:
             logger.error(f"❌ Ошибка остановки парсера: {e}")
     
     def _run_scheduler(self):
-        """Запуск планировщика в отдельном потоке"""
-        while self.is_running:
-            try:
-                time.sleep(60)  # Проверяем каждую минуту
-            except Exception as e:
-                logger.error(f"❌ Ошибка в планировщике: {e}")
-                time.sleep(300)  # Ждем 5 минут при ошибке
+        """Метод больше не нужен - планировщик работает в фоне"""
+        pass
     
     def _scheduled_news_parsing(self):
         """Запланированный парсинг новостей"""

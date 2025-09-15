@@ -10,6 +10,7 @@ beautifulsoup4==4.12.2
 # Временно отключено из-за проблем с Python 3.13
 # lxml==4.9.3
 schedule==1.2.0
+APScheduler==3.10.4
 httpx==0.25.2
 asyncio-throttle==1.0.2
 datetime==5.4

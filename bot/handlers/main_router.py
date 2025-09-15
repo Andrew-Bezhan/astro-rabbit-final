@@ -304,6 +304,9 @@ class MainRouter(BaseHandler):
             elif callback_data.startswith("delete_company_"):
                 company_id = callback_data.replace("delete_company_", "")
                 await self.company_handler.delete_company(update, context, company_id)
+            elif callback_data.startswith("analyze_company_"):
+                company_id = callback_data.replace("analyze_company_", "")
+                await self.company_handler.analyze_company(update, context, company_id)
             elif callback_data.startswith("sphere_"):
                 await self.company_handler.handle_sphere_selection(update, context, callback_data)
             elif callback_data.startswith("forecast_"):
