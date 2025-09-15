@@ -55,6 +55,17 @@ class BotState(Enum):
     PROFILE_EDIT = auto()            # Редактирование профиля
     PROFILE_DELETE_CONFIRM = auto()  # Подтверждение удаления
     
+    # Состояния для работы с компаниями
+    COMPANY_NAME_INPUT = auto()      # Ввод названия компании
+    COMPANY_REG_DATE_INPUT = auto()  # Ввод даты регистрации
+    COMPANY_REG_PLACE_INPUT = auto() # Ввод места регистрации
+    COMPANY_SPHERE_SELECTION = auto() # Выбор сферы деятельности компании
+    COMPANY_OWNER_NAME_INPUT = auto() # Ввод ФИО собственника
+    COMPANY_OWNER_BIRTH_INPUT = auto() # Ввод даты рождения собственника
+    COMPANY_DIRECTOR_NAME_INPUT = auto() # Ввод ФИО директора
+    COMPANY_DIRECTOR_BIRTH_INPUT = auto() # Ввод даты рождения директора
+    MAIN_MENU = auto()               # Главное меню
+    
     # Состояния для детального анализа
     ANALYSIS_COMPANY_SELECT = auto() # Выбор компании для анализа
     ANALYSIS_TYPE_SELECT = auto()    # Выбор типа анализа
@@ -239,6 +250,10 @@ class UserData:
             self.object_name,
             self.object_birth_date
         ])
+    
+    def get(self, key: str, default=None):
+        """Метод для совместимости с dict-like интерфейсом"""
+        return getattr(self, key, default)
 
 
 class StateManager:
@@ -306,4 +321,22 @@ class StateManager:
             del self.user_states[user_id]
         if user_id in self.user_data:
             del self.user_data[user_id]
+    
+    def set_user_state(self, user_id: int, state: BotState):
+        """Алиас для set_state для совместимости"""
+        self.set_state(user_id, state)
+    
+    def get_user_state(self, user_id: int) -> BotState:
+        """Алиас для get_state для совместимости"""
+        return self.get_state(user_id)
+    
+    def save_user_data(self, user_id: int, data: dict):
+        """Сохранение данных пользователя"""
+        if user_id not in self.user_data:
+            self.user_data[user_id] = UserData()
+        
+        # Обновляем данные
+        for key, value in data.items():
+            if hasattr(self.user_data[user_id], key):
+                setattr(self.user_data[user_id], key, value)
 
