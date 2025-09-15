@@ -9,7 +9,7 @@ import signal
 import sys
 from dotenv import load_dotenv
 
-from bot.telegram_bot import AstroBot
+from bot.telegram_bot_fixed import AstroBot
 from utils.logger import setup_logger
 
 # Загружаем переменные окружения
