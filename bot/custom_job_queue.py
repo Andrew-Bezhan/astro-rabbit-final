@@ -13,7 +13,7 @@ class CustomJobQueue(TelegramJobQueue):
     
     def __init__(self):
         try:
-            # В новой версии python-telegram-bot просто инициализируем базовый класс
+            # В новой версии python-telegram-bot 22.4 просто инициализируем без параметров
             super().__init__()
             logger.info("✅ CustomJobQueue инициализирован")
             

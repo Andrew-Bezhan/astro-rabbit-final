@@ -13,8 +13,6 @@ from telegram.ext import (
     ContextTypes,
     Defaults
 )
-from .custom_job_queue import CustomJobQueue
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .handlers import MainRouter
 from utils.config import load_config
@@ -39,16 +37,11 @@ class AstroBot:
         # Создаем приложение сразу в конструкторе с явным указанием часового пояса
         import pytz
         
-        # Создаем кастомный JobQueue с правильными настройками часового пояса
-        job_queue = CustomJobQueue()
-        
-        # Создаем приложение с явными настройками
+        # Создаем приложение
         self.application = (
             Application.builder()
             .token(self.config.bot.token)
-            .defaults(Defaults(tzinfo=pytz.utc))
             .arbitrary_callback_data(True)
-            .job_queue(job_queue)
             .build()
         )
         
@@ -63,8 +56,17 @@ class AstroBot:
             # Запускаем бота
             logger.info("🚀 Запуск Telegram бота...")
             
-            # Упрощенный запуск без агрессивной очистки
-            await self.application.run_polling(drop_pending_updates=True)
+            # Запуск с правильным управлением event loop для версии 21.7
+            await self.application.initialize()
+            await self.application.start()
+            await self.application.updater.start_polling(drop_pending_updates=True)
+            
+            # Ждем до отмены (используем правильный метод для 21.7)
+            try:
+                while True:
+                    await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                pass
         except asyncio.CancelledError:
             logger.warning("⚠️ Telegram инициализация отменена пользователем")
             return
