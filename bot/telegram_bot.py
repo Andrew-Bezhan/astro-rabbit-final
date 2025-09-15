@@ -3,11 +3,12 @@
 """
 
 import asyncio
+import pytz
 from telegram import Update
 from telegram.ext import (
-    Application, 
-    CommandHandler, 
-    MessageHandler, 
+    Application,
+    CommandHandler,
+    MessageHandler,
     CallbackQueryHandler,
     filters,
     ContextTypes,
@@ -28,14 +29,18 @@ class AstroBot:
     def __init__(self):
         """Инициализация бота"""
         self.config = load_config()
-        self.handlers = MainRouter()
+        
         # Проверяем наличие токена
         if not self.config.bot.token:
             logger.error("❌ Отсутствует токен Telegram бота в .env файле")
             raise ValueError("Telegram bot token is required")
         
-        # Создаем приложение сразу в конструкторе с явным указанием часового пояса
-        import pytz
+        # Инициализируем менеджер сервисов (один раз для всего бота)
+        from .services_manager import ServicesManager
+        self.services = ServicesManager.get_instance()
+        
+        # Создаем обработчики после инициализации сервисов
+        self.handlers = MainRouter()
         
         # Создаем приложение
         self.application = (
@@ -282,7 +287,7 @@ class AstroBot:
                 from datetime import datetime
                 forecast = f"""
 🌅 **ЕЖЕДНЕВНЫЙ ПРОГНОЗ**
-📅 {datetime.now(UTC).strftime('%d.%m.%Y')}
+📅 {datetime.now(pytz.UTC).strftime('%d.%m.%Y')}
 
 🏢 Компания: {company_data.get('name', 'Не указано')}
 

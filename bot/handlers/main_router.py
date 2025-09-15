@@ -251,6 +251,25 @@ class MainRouter(BaseHandler):
                         await self.daily_handler.handle_company_input(update, context)
                     return
                 
+                # Проверяем состояния CompanyHandler
+                company_state = self.state_manager.get_user_state(user_id)
+                if company_state:
+                    if company_state == BotState.COMPANY_NAME_INPUT:
+                        await self.company_handler.handle_company_name_input(update, context, text)
+                    elif company_state == BotState.COMPANY_REG_DATE_INPUT:
+                        await self.company_handler.handle_registration_date_input(update, context, text)
+                    elif company_state == BotState.COMPANY_REG_CITY_INPUT:
+                        await self.company_handler.handle_registration_city_input(update, context, text)
+                    elif company_state == BotState.COMPANY_OWNER_NAME_INPUT:
+                        await self.company_handler.handle_owner_name_input(update, context, text)
+                    elif company_state == BotState.COMPANY_OWNER_BIRTH_INPUT:
+                        await self.company_handler.handle_owner_birth_input(update, context, text)
+                    elif company_state == BotState.COMPANY_DIRECTOR_NAME_INPUT:
+                        await self.company_handler.handle_director_name_input(update, context, text)
+                    elif company_state == BotState.COMPANY_DIRECTOR_BIRTH_INPUT:
+                        await self.company_handler.handle_director_birth_input(update, context, text)
+                    return
+                
                 await self._handle_unknown_state(update, context, text)
                 
         except Exception as e:
