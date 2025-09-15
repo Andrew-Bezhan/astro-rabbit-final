@@ -5,6 +5,8 @@
 
 import os
 import asyncio
+import signal
+import sys
 from dotenv import load_dotenv
 
 from bot.telegram_bot import AstroBot
@@ -19,14 +21,6 @@ logger = setup_logger()
 
 async def main():
     """Основная функция запуска бота"""
-    
-    # Проверка единственности экземпляра (временно отключена)
-    # try:
-    #     from check_instance import check_single_instance
-    #     check_single_instance()  # Функция теперь всегда возвращает True после очистки
-    #     await asyncio.sleep(1)  # Небольшая пауза для завершения процессов
-    # except Exception as e:
-    #     logger.warning(f"⚠️ Не удалось проверить единственность: {type(e).__name__}")
     
     logger.info("🚀 Запуск Астробота...")
     
@@ -58,28 +52,46 @@ async def main():
     try:
         # Создаем и запускаем бота
         bot = AstroBot()
-        await bot.start()
         
-        logger.info("✅ Астробот успешно запущен!")
-        
-        # Держим приложение запущенным
+        # Создаем событие для остановки
         stop_event = asyncio.Event()
+        
+        # Настройка обработчика сигналов для корректной остановки
+        def signal_handler():
+            logger.info("⏹️ Получен сигнал остановки")
+            stop_event.set()
+        
+        # Регистрируем обработчики сигналов
+        if sys.platform != 'win32':
+            loop = asyncio.get_running_loop()
+            loop.add_signal_handler(signal.SIGINT, signal_handler)
+            loop.add_signal_handler(signal.SIGTERM, signal_handler)
+        
+        # Запускаем бота
+        await bot.start()
+        logger.info("✅ Астробот успешно запущен!")
         
         # Ждем сигнал остановки
         try:
             await stop_event.wait()
         except KeyboardInterrupt:
             logger.info("⏹️ Получен сигнал остановки (Ctrl+C)")
-            stop_event.set()
         
     except Exception as e:
-        import traceback
-        logger.error(f"❌ Ошибка при запуске бота: {e}\n{traceback.format_exc()}")
+        logger.error(f"❌ Ошибка при запуске бота: {e}")
     finally:
         if bot:
-            await bot.stop()
+            try:
+                await bot.stop()
+            except Exception as e:
+                logger.error(f"❌ Ошибка при остановке бота: {e}")
         logger.info("🛑 Астробот остановлен")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("⏹️ Программа прервана пользователем")
+    except Exception as e:
+        logger.error(f"❌ Критическая ошибка: {e}")

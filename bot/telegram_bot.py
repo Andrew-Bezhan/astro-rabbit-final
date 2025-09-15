@@ -139,25 +139,13 @@ class AstroBot:
                         raise
             
             logger.info("✅ Астробот успешно запущен и готов к работе!")
-            
-            # Держим бота запущенным
             logger.info("🔄 Бот работает. Нажмите Ctrl+C для остановки.")
             
-            # Создаем событие для ожидания остановки
-            stop_event = asyncio.Event()
-            
-            # Для Windows используем простое ожидание
-            try:
-                await stop_event.wait()
-            except KeyboardInterrupt:
-                logger.info("📡 Получен сигнал остановки (Ctrl+C)")
-                stop_event.set()
+            # НE СОЗДАЕМ stop_event здесь - управление передается в main.py
             
         except Exception as e:
             logger.error(f"❌ Ошибка запуска бота: {e}")
             raise
-        finally:
-            await self.stop()
     
     async def stop(self):
         """Остановка бота"""
@@ -165,10 +153,15 @@ class AstroBot:
             if self.application:
                 logger.info("🛑 Остановка Telegram бота...")
                 
-                if self.application.updater:
-                    await self.application.updater.stop()
-                await self.application.stop()
-                await self.application.shutdown()
+                # Проверяем, запущен ли бот перед остановкой
+                if hasattr(self.application, 'running') and self.application.running:
+                    if self.application.updater:
+                        await self.application.updater.stop()
+                    await self.application.stop()
+                
+                # Проверяем, инициализирован ли бот перед shutdown
+                if hasattr(self.application, '_initialized') and self.application._initialized:
+                    await self.application.shutdown()
                 
                 logger.info("✅ Telegram бот остановлен")
                 
