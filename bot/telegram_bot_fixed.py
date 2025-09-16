@@ -55,12 +55,23 @@ class AstroBot:
             me = await self.bot.get_me()
             logger.info(f"🚀 Запуск бота @{me.username} ({me.first_name})")
             
-            # Очищаем webhook
+            # Очищаем webhook и ждем немного
             await self.bot.delete_webhook(drop_pending_updates=True)
+            await asyncio.sleep(2)  # Даем время серверам Telegram обработать
             
-            # Получаем последний update_id
-            updates = await self.bot.get_updates(limit=1)
-            last_update_id = updates[-1].update_id if updates else 0
+            # Получаем последний update_id с retry логикой
+            last_update_id = 0
+            for attempt in range(3):
+                try:
+                    updates = await self.bot.get_updates(limit=1)
+                    last_update_id = updates[-1].update_id if updates else 0
+                    break
+                except TelegramError as e:
+                    if "conflict" in str(e).lower():
+                        logger.warning(f"⚠️ Конфликт при получении updates, попытка {attempt + 1}/3")
+                        await asyncio.sleep(5 * (attempt + 1))  # Экспоненциальная задержка
+                    else:
+                        raise
             
             self.running = True
             logger.info("✅ Бот запущен и готов к работе")
@@ -79,8 +90,18 @@ class AstroBot:
                         await self._handle_update(update)
                         
                 except TelegramError as e:
-                    logger.error(f"❌ Ошибка Telegram API: {e}")
-                    await asyncio.sleep(5)  # Ждем перед повтором
+                    if "conflict" in str(e).lower():
+                        logger.warning(f"⚠️ Конфликт Telegram API: {e}")
+                        logger.info("🔄 Пересоздаем подключение через 10 секунд...")
+                        await asyncio.sleep(10)
+                        # Пересоздаем бота для решения конфликта
+                        await self.bot.close()
+                        self.bot = Bot(token=self.config.bot.token)
+                        await self.bot.delete_webhook(drop_pending_updates=True)
+                        await asyncio.sleep(2)
+                    else:
+                        logger.error(f"❌ Ошибка Telegram API: {e}")
+                        await asyncio.sleep(5)  # Ждем перед повтором
                 except Exception as e:
                     logger.error(f"❌ Неожиданная ошибка: {e}")
                     await asyncio.sleep(5)
