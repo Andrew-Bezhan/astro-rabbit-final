@@ -107,6 +107,7 @@ class UserData:
         self.daily_forecast_enabled: bool = False
         self.daily_forecast_time: str = "08:00"
         self.selected_company_id: Optional[int] = None
+        self.active_company_id: Optional[int] = None  # Добавляем отсутствующий атрибут
         
         # Временные данные
         self.current_step: Optional[str] = None
@@ -138,6 +139,7 @@ class UserData:
         self.daily_forecast_enabled = False
         self.daily_forecast_time = "08:00"
         self.selected_company_id = None
+        self.active_company_id = None  # Добавляем в reset тоже
         
         # Временные данные
         self.current_step = None
@@ -165,7 +167,8 @@ class UserData:
             'object_birth_place': self.object_birth_place,
             'daily_forecast_enabled': self.daily_forecast_enabled,
             'daily_forecast_time': self.daily_forecast_time,
-            'selected_company_id': self.selected_company_id
+            'selected_company_id': self.selected_company_id,
+            'active_company_id': self.active_company_id  # Добавляем в to_dict
         }
     
     def from_dict(self, data: dict):
@@ -178,6 +181,9 @@ class UserData:
         for key, value in data.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+        
+        # Обязательно читаем active_company_id  
+        self.active_company_id = data.get('active_company_id')
     
     def get_company_data(self) -> dict:
         """

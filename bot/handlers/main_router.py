@@ -136,7 +136,13 @@ class MainRouter(BaseHandler):
         
         # Проверяем наличие активной компании
         user_data = self.state_manager.get_user_data(user_id)
-        active_company_id = user_data.get('active_company_id')
+        active_company_id = getattr(user_data, 'active_company_id', None)
+        
+        # Безопасное приведение к int
+        if isinstance(active_company_id, str) and active_company_id.isdigit():
+            active_company_id = int(active_company_id)
+        
+        logger.info(f"🔍 Active company ID for zodiac user {user_id}: {active_company_id}")
         
         if not active_company_id:
             await self._show_no_active_company_message(update)
@@ -162,7 +168,7 @@ class MainRouter(BaseHandler):
         
         # Проверяем наличие активной компании
         user_data = self.state_manager.get_user_data(user_id)
-        active_company_id = user_data.get('active_company_id')
+        active_company_id = getattr(user_data, 'active_company_id', None)
         
         if not active_company_id:
             await self._show_no_active_company_message(update)

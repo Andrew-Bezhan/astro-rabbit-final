@@ -163,7 +163,7 @@ class ForecastHandler(BaseHandler):
         try:
             # Получаем данные активной компании
             user_data = self.state_manager.get_user_data(user_id)
-            active_company_id = user_data.get('active_company_id')
+            active_company_id = getattr(user_data, 'active_company_id', None)
             
             if not active_company_id:
                 await query.edit_message_text(
@@ -228,7 +228,7 @@ class ForecastHandler(BaseHandler):
         try:
             # Получаем данные активной компании
             user_data = self.state_manager.get_user_data(user_id)
-            active_company_id = user_data.get('active_company_id')
+            active_company_id = getattr(user_data, 'active_company_id', None)
             
             if not active_company_id:
                 await query.edit_message_text(
@@ -293,7 +293,7 @@ class ForecastHandler(BaseHandler):
         try:
             # Получаем данные активной компании
             user_data = self.state_manager.get_user_data(user_id)
-            active_company_id = user_data.get('active_company_id')
+            active_company_id = getattr(user_data, 'active_company_id', None)
             
             if not active_company_id:
                 await query.edit_message_text(
@@ -358,7 +358,7 @@ class ForecastHandler(BaseHandler):
         try:
             # Получаем данные активной компании
             user_data = self.state_manager.get_user_data(user_id)
-            active_company_id = user_data.get('active_company_id')
+            active_company_id = getattr(user_data, 'active_company_id', None)
             
             if not active_company_id:
                 await query.edit_message_text(
