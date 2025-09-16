@@ -11,10 +11,6 @@ from telegram.ext import ContextTypes
 
 from ..keyboards import BotKeyboards
 from ..states import StateManager
-from ai_astrologist.astro_agent import AstroAgent
-from ai_astrologist.numerology import NumerologyCalculator
-from news_parser.news_analyzer import NewsAnalyzer
-from embedding.embedding_manager import EmbeddingManager
 from database.connection import get_session
 from database.crud import UserCRUD, CompanyCRUD
 from utils.helpers import validate_date, clean_company_name, is_valid_russian_name
@@ -33,30 +29,17 @@ class BaseHandler:
         self.state_manager = StateManager()
         self.keyboards = BotKeyboards()
         
-        # Инициализация основных сервисов
-        try:
-            self.astro_agent = AstroAgent()
-            self.numerology = NumerologyCalculator()
-            self.news_analyzer = NewsAnalyzer()
-            
-            # Инициализируем валидатор
-            try:
-                from validation_agent.validator import ValidationAgent
-                self.validator = ValidationAgent()
-            except Exception as e:
-                logger.warning(f"⚠️ Валидатор недоступен: {e}")
-                self.validator = None
-            
-            # Инициализируем embedding manager
-            try:
-                self.embedding_manager = EmbeddingManager()
-            except Exception as e:
-                logger.warning(f"⚠️ Embedding manager недоступен: {e}")
-                self.embedding_manager = None
-                
-        except Exception as e:
-            logger.error(f"❌ Ошибка инициализации сервисов: {e}")
-            raise
+        # Получаем ссылки на сервисы из менеджера (избегаем дублирования)
+        from ..services_manager import ServicesManager
+        services = ServicesManager.get_instance()
+        
+        self.astro_agent = services.astro_agent
+        self.numerology = services.numerology
+        self.news_analyzer = services.news_analyzer
+        self.validator = services.validator
+        self.embedding_manager = services.embedding_manager
+        
+        logger.info("✅ BaseHandler инициализирован с общими сервисами")
     
     # Общие методы для работы с данными
     
@@ -225,12 +208,12 @@ class BaseHandler:
     # Вспомогательные методы валидации
     
     def _validate_company_name(self, name: str) -> tuple[bool, str]:
-        """Валидация названия компании"""
+        """Валидация названия компании согласно спецификации companies.py"""
         if not name or len(name.strip()) < 2:
             return False, "Название компании должно содержать минимум 2 символа"
         
-        if len(name) > 100:
-            return False, "Название компании слишком длинное (максимум 100 символов)"
+        if len(name) > 20:
+            return False, "Название компании слишком длинное (максимум 20 символов)"
         
         # Проверяем на недопустимые символы
         if not re.match(r'^[а-яА-ЯёЁa-zA-Z0-9\s\-\.\,\"\']+$', name):

@@ -3,20 +3,19 @@
 """
 
 import asyncio
+import pytz
 from telegram import Update
 from telegram.ext import (
-    Application, 
-    CommandHandler, 
-    MessageHandler, 
+    Application,
+    CommandHandler,
+    MessageHandler,
     CallbackQueryHandler,
     filters,
     ContextTypes,
     Defaults
 )
-from .custom_job_queue import CustomJobQueue
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from .handlers import BotHandlers
+from .handlers import MainRouter
 from utils.config import load_config
 from utils.logger import setup_logger
 from database.connection import init_database
@@ -30,25 +29,24 @@ class AstroBot:
     def __init__(self):
         """Инициализация бота"""
         self.config = load_config()
-        self.handlers = BotHandlers()
+        
         # Проверяем наличие токена
         if not self.config.bot.token:
             logger.error("❌ Отсутствует токен Telegram бота в .env файле")
             raise ValueError("Telegram bot token is required")
         
-        # Создаем приложение сразу в конструкторе с явным указанием часового пояса
-        import pytz
+        # Инициализируем менеджер сервисов (один раз для всего бота)
+        from .services_manager import ServicesManager
+        self.services = ServicesManager.get_instance()
         
-        # Создаем кастомный JobQueue с правильными настройками часового пояса
-        job_queue = CustomJobQueue()
+        # Создаем обработчики после инициализации сервисов
+        self.handlers = MainRouter()
         
-        # Создаем приложение с явными настройками
+        # Создаем приложение
         self.application = (
             Application.builder()
             .token(self.config.bot.token)
-            .defaults(Defaults(tzinfo=pytz.utc))
             .arbitrary_callback_data(True)
-            .job_queue(job_queue)
             .build()
         )
         
@@ -63,88 +61,22 @@ class AstroBot:
             # Запускаем бота
             logger.info("🚀 Запуск Telegram бота...")
             
-            # АГРЕССИВНАЯ ОЧИСТКА ПЕРЕД СТАРТОМ
-            try:
-                from telegram import Bot
-                temp_bot = Bot(token=self.config.bot.token)
-                
-                # Принудительно очищаем webhook и updates
-                await temp_bot.delete_webhook(drop_pending_updates=True)
-                await asyncio.sleep(2)
-                
-                # Получаем и игнорируем все pending updates
-                await temp_bot.get_updates(offset=-1, limit=100, timeout=1)
-                await asyncio.sleep(1)
-                
-                logger.info("🧹 АГРЕССИВНАЯ очистка Telegram завершена")
-            except Exception as e:
-                logger.warning(f"⚠️ Агрессивная очистка не удалась: {e}")
+            # Запуск с правильным управлением event loop для версии 21.7
+            await self.application.initialize()
+            await self.application.start()
+            await self.application.updater.start_polling(drop_pending_updates=True)
             
+            # Ждем до отмены (используем правильный метод для 21.7)
             try:
-                await asyncio.wait_for(self.application.initialize(), timeout=30.0)
-                await asyncio.wait_for(self.application.start(), timeout=15.0)
-                
-                # Дополнительная очистка ПОСЛЕ старта
-                try:
-                    await self.application.bot.delete_webhook(drop_pending_updates=True)
-                    logger.info("🔄 Webhook очищен для избежания конфликтов")
-                    
-                    # Дополнительная очистка pending updates
-                    await asyncio.sleep(1)  # Небольшая задержка
-                    await self.application.bot.get_updates(offset=-1, limit=1)
-                    logger.info("🧹 Pending updates очищены")
-                    
-                    # Настраиваем команды меню бота
-                    await self._setup_bot_commands()
-                    logger.info("📋 Команды бота настроены")
-                except Exception as e:
-                    logger.warning(f"⚠️ Не удалось очистить webhook/updates: {type(e).__name__}")
-                
-            except asyncio.TimeoutError:
-                logger.error("❌ Telegram инициализация прервана по таймауту (30 сек)")
-                logger.info("🔄 Попробуйте перезапустить бота через несколько секунд")
-                raise
+                while True:
+                    await asyncio.sleep(1)
             except asyncio.CancelledError:
-                logger.warning("⚠️ Telegram инициализация отменена пользователем")
-                return
-            except Exception as e:
-                logger.error(f"❌ Ошибка инициализации Telegram: {type(e).__name__}: {e}")
-                raise
-            
-            # Запускаем polling (получение обновлений) с retry механизмом
-            retry_count = 0
-            max_retries = 3
-            
-            while retry_count < max_retries:
-                try:
-                    if self.application.updater:
-                        await self.application.updater.start_polling(
-                            drop_pending_updates=True,
-                            allowed_updates=Update.ALL_TYPES
-                        )
-                    break  # Если успешно, выходим из цикла
-                except Exception as e:
-                    if "Conflict" in str(e) and retry_count < max_retries - 1:
-                        retry_count += 1
-                        logger.warning(f"⚠️ Conflict detected, retry {retry_count}/{max_retries}")
-                        await asyncio.sleep(5)  # Ждем перед повтором
-                        # Пробуем еще раз очистить
-                        try:
-                            await self.application.bot.delete_webhook(drop_pending_updates=True)
-                            await asyncio.sleep(2)
-                        except:
-                            pass
-                        continue
-                    else:
-                        raise
-            
-            logger.info("✅ Астробот успешно запущен и готов к работе!")
-            logger.info("🔄 Бот работает. Нажмите Ctrl+C для остановки.")
-            
-            # НE СОЗДАЕМ stop_event здесь - управление передается в main.py
-            
+                pass
+        except asyncio.CancelledError:
+            logger.warning("⚠️ Telegram инициализация отменена пользователем")
+            return
         except Exception as e:
-            logger.error(f"❌ Ошибка запуска бота: {e}")
+            logger.error(f"❌ Ошибка инициализации Telegram: {type(e).__name__}: {e}")
             raise
     
     async def stop(self):
@@ -355,7 +287,7 @@ class AstroBot:
                 from datetime import datetime
                 forecast = f"""
 🌅 **ЕЖЕДНЕВНЫЙ ПРОГНОЗ**
-📅 {datetime.now(UTC).strftime('%d.%m.%Y')}
+📅 {datetime.now(pytz.UTC).strftime('%d.%m.%Y')}
 
 🏢 Компания: {company_data.get('name', 'Не указано')}
 
