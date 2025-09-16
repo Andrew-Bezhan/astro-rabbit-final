@@ -5,7 +5,8 @@
 from enum import Enum, auto
 from typing import Optional, Dict
 from datetime import datetime
-from pytz import UTC
+from datetime import timezone
+UTC = timezone.utc
 
 
 class BotState(Enum):
