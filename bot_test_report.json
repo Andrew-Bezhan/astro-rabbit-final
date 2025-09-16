@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-09-16T22:01:45.749842",
+  "total_tests": 10,
+  "passed_tests": 5,
+  "failed_tests": [
+    "test_companies_flow",
+    "test_zodiac_analysis",
+    "test_compatibility_check",
+    "test_daily_forecast",
+    "test_settings_menu"
+  ],
+  "success_rate": 50.0,
+  "test_results": [
+    {
+      "test": "test_start_command",
+      "status": "PASSED",
+      "timestamp": "2025-09-16T22:01:45.609990"
+    },
+    {
+      "test": "test_main_menu_buttons",
+      "status": "PASSED",
+      "timestamp": "2025-09-16T22:01:45.693065"
+    },
+    {
+      "test": "test_business_forecast",
+      "status": "PASSED",
+      "timestamp": "2025-09-16T22:01:45.733221"
+    },
+    {
+      "test": "test_error_handling",
+      "status": "PASSED",
+      "timestamp": "2025-09-16T22:01:45.741271"
+    },
+    {
+      "test": "test_database_operations",
+      "status": "PASSED",
+      "timestamp": "2025-09-16T22:01:45.746799"
+    }
+  ]
+}
