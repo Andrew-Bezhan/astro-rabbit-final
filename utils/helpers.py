@@ -42,7 +42,16 @@ def validate_date(date_string: str) -> Optional[datetime]:
     
     for fmt in date_formats:
         try:
-            return datetime.strptime(date_string.strip(), fmt)
+            parsed_date = datetime.strptime(date_string.strip(), fmt)
+            
+            # Проверяем временные границы
+            current_year = datetime.now().year
+            if parsed_date.year < 1900:
+                return None  # Слишком старая дата
+            if parsed_date.year > current_year:
+                return None  # Будущая дата
+                
+            return parsed_date
         except ValueError:
             continue
     
