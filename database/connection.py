@@ -61,7 +61,18 @@ class DatabaseManager:
                 bind=self.engine
             )
             
-            logger.info(f"🗃️ База данных инициализирована: {database_url}")
+            # Маскируем пароль в логах для безопасности
+            safe_url = database_url
+            if 'postgresql://' in database_url and '@' in database_url:
+                # Заменяем пароль на звездочки
+                parts = database_url.split('@')
+                if len(parts) == 2:
+                    credentials = parts[0].split('//')[-1]
+                    if ':' in credentials:
+                        user, password = credentials.split(':', 1)
+                        safe_url = database_url.replace(f':{password}@', ':***@')
+            
+            logger.info(f"🗃️ База данных инициализирована: {safe_url}")
             
         except Exception as e:
             logger.error(f"❌ Ошибка инициализации БД: {e}")

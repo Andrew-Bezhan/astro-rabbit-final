@@ -23,8 +23,20 @@ class NewsAnalyzer:
     
     def __init__(self):
         """Инициализация анализатора"""
-        self.news_client = NewsDataClient()
-        self.embedding_manager = EmbeddingManager()
+        try:
+            self.news_client = NewsDataClient()
+            self.news_available = True
+        except ValueError as e:
+            logger.warning(f"⚠️ NewsData.io недоступен: {e}")
+            self.news_client = None
+            self.news_available = False
+        
+        try:
+            self.embedding_manager = EmbeddingManager()
+        except Exception as e:
+            logger.warning(f"⚠️ Embedding manager недоступен: {e}")
+            self.embedding_manager = None
+            
         self.is_running = False
         self.scheduler = None  # APScheduler instance
         
@@ -43,6 +55,17 @@ class NewsAnalyzer:
             Dict[str, Any]: Анализ новостей
         """
         try:
+            # Проверяем доступность NewsData.io
+            if not self.news_available or not self.news_client:
+                logger.warning("⚠️ NewsData.io недоступен, возвращаем пустой анализ")
+                return {
+                    "sentiment_analysis": "Анализ новостей недоступен - отсутствует API ключ NewsData.io",
+                    "sphere_news": [],
+                    "market_trends": [],
+                    "risk_factors": [],
+                    "opportunities": []
+                }
+            
             # Получаем новости по сфере деятельности
             sphere_news = await self.news_client.get_news_by_sphere(
                 company_sphere, limit=15
@@ -88,6 +111,11 @@ class NewsAnalyzer:
             str: Текстовая сводка новостей
         """
         try:
+            # Проверяем доступность NewsData.io
+            if not self.news_available or not self.news_client:
+                logger.warning("⚠️ NewsData.io недоступен для получения сводки новостей")
+                return "📰 Ежедневная сводка новостей временно недоступна - отсутствует подключение к источникам новостей."
+            
             # Получаем свежие новости
             summary = await self.news_client.get_fresh_news_summary(hours_back=24)
             
@@ -123,6 +151,15 @@ class NewsAnalyzer:
         try:
             if self.is_running:
                 logger.warning("⚠️ Парсер новостей уже запущен")
+                return
+            
+            # Проверяем доступность NewsData.io и embedding manager
+            if not self.news_available or not self.news_client:
+                logger.warning("⚠️ NewsData.io недоступен - пропускаем запуск парсера")
+                return
+                
+            if not self.embedding_manager:
+                logger.warning("⚠️ Embedding manager недоступен - пропускаем запуск парсера")
                 return
             
             # Парсинг в 07:00 утра UTC
