@@ -48,3 +48,4 @@ qdrant-client==1.15.1
 requests==2.31.0
 schedule==1.2.0
 sqlalchemy==1.4.50
+psycopg2-binary
