@@ -18,7 +18,9 @@ class QdrantClient:
     def __init__(self):
         """Инициализация ОБЯЗАТЕЛЬНОГО Qdrant"""
         self.api_key = os.getenv('QDRANT_API_KEY')
-        self.url = os.getenv('QDRANT_URL', 'https://67c4f754-3521-4ca2-b53a-4f44317484d7.us-east4-0.gcp.cloud.qdrant.io:6333')
+        # Исправляем URL если нет начальной "h" в https://
+        raw_url = os.getenv('QDRANT_URL', 'https://67c4f754-3521-4ca2-b53a-4f44317484d7.us-east4-0.gcp.cloud.qdrant.io:6333')
+        self.url = raw_url.replace('ttps://', 'https://') if raw_url.startswith('ttps://') else raw_url
         self.collection_name = "astrobot-results"
         
         # Поддержка in-memory режима
