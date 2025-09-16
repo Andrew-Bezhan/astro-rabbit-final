@@ -4,7 +4,8 @@
 
 import re
 from datetime import datetime
-from pytz import UTC
+from datetime import timezone
+UTC = timezone.utc
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 

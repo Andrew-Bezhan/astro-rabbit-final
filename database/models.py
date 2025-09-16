@@ -6,7 +6,8 @@ from sqlalchemy import Column, Integer, String, DateTime, Text, Float, Boolean, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from pytz import UTC
+from datetime import timezone
+UTC = timezone.utc
 from typing import Dict, Any, Optional
 
 Base = declarative_base()

@@ -5,7 +5,8 @@
 
 from typing import Dict, Any, Optional, List
 from datetime import datetime
-from pytz import UTC
+from datetime import timezone
+UTC = timezone.utc
 
 from ai_astrologist.numerology import NumerologyCalculator
 from astrology_api.astro_calculations import AstroCalculations

@@ -3,7 +3,7 @@
 """
 
 import asyncio
-import pytz
+from datetime import datetime, timezone
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -287,7 +287,7 @@ class AstroBot:
                 from datetime import datetime
                 forecast = f"""
 🌅 **ЕЖЕДНЕВНЫЙ ПРОГНОЗ**
-📅 {datetime.now(pytz.UTC).strftime('%d.%m.%Y')}
+📅 {datetime.now(timezone.utc).strftime('%d.%m.%Y')}
 
 🏢 Компания: {company_data.get('name', 'Не указано')}
 
