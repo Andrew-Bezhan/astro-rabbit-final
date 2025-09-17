@@ -1,55 +1,54 @@
-# Основные зависимости проекта
+# ============================================================================
+# ASTRO RABBIT BOT - REQUIREMENTS
+# ============================================================================
+
+# Telegram Bot Framework
 python-telegram-bot==20.7
-python-docx==1.1.0
+
+# OpenAI API (обновлена до совместимой версии)
+openai>=1.56.1
+
+# HTTP клиент (обновлен до совместимой версии)
+httpx>=0.28.1
+
+# Основные утилиты
 requests==2.31.0
 python-dotenv==1.0.0
-pytz==2023.3
-qdrant-client==1.15.1
-openai==1.12.0
-# Удалено: google-genai - больше не используется
-beautifulsoup4==4.12.2
-# Временно отключено из-за проблем с Python 3.13
-# lxml==4.9.3
-schedule==1.2.0
-APScheduler==3.10.4
-httpx==0.25.2
-asyncio-throttle==1.0.2
-datetime==5.4
-# Временно отключены из-за проблем совместимости с Python 3.13
-# pandas==2.1.4
-# numpy==1.25.2
-
-# Временно отключены астрологические расчеты
-# pyephem==4.1.5
-# swisseph==2.10.03.2
-
-# Для работы с базами данных
-sqlalchemy==1.4.50
-alembic==1.13.1
-
-# Утилиты
-loguru==0.7.2
-# Временно отключено из-за проблем с Python 3.13
-# pydantic==2.5.3
-alembic==1.13.1
-APScheduler==3.10.4
-asyncio-throttle==1.0.2
-beautifulsoup4==4.12.2
-datetime==5.4
-httpx==0.25.2
-loguru==0.7.2
-openai==1.12.0
-psutil
-python-docx==1.1.0
-python-dotenv==1.0.0
-python-telegram-bot==20.7
-pytz==2023.3
-qdrant-client==1.15.1
-requests==2.31.0
-schedule==1.2.0
-sqlalchemy==1.4.50
-psycopg2-binary
-PyYAML
 aiohttp
+
+# База данных
+sqlalchemy==1.4.50
 psycopg2-binary
-sqlalchemy
+alembic==1.13.1
+
+# Работа с документами
+python-docx==1.1.0
+beautifulsoup4==4.12.2
+
+# Планировщик задач
+APScheduler==3.10.4
+schedule==1.2.0
+
+# Векторная база данных
+qdrant-client==1.15.1
+
+# Логирование
+loguru==0.7.2
+
+# Утилиты времени
+pytz==2023.3
+
+# Асинхронные утилиты
+asyncio-throttle==1.0.2
+
+# Системные утилиты
+psutil
+PyYAML
+
+# Временно отключены (не критичны для основной работы):
+# pandas>=2.0.0
+# numpy>=1.24.0
+# pyephem>=4.1.0
+# swisseph>=2.10.0
+# pydantic>=2.5.0
+# lxml>=4.9.0
