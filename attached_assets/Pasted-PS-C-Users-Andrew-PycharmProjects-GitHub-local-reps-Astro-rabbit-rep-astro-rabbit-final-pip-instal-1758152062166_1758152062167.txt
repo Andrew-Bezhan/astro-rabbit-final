@@ -1,0 +1,34 @@
+PS C:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final> pip install -r requirements.txt
+Requirement already satisfied: python-telegram-bot==20.7 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 6)) (20.7)
+Collecting openai>=1.56.1 (from -r requirements.txt (line 9))
+  Downloading openai-1.108.0-py3-none-any.whl.metadata (29 kB)
+Collecting httpx>=0.28.1 (from -r requirements.txt (line 12))
+  Using cached httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Requirement already satisfied: requests==2.31.0 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 15)) (2.31.0)
+Requirement already satisfied: python-dotenv==1.0.0 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 16)) (1.0.0)
+Requirement already satisfied: aiohttp in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 17)) (3.11.12)
+Requirement already satisfied: sqlalchemy==1.4.50 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 20)) (1.4.50)
+Requirement already satisfied: psycopg2-binary in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 21)) (2.9.10)
+Requirement already satisfied: alembic==1.13.1 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 22)) (1.13.1)
+Requirement already satisfied: python-docx==1.1.0 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 25)) (1.1.0)
+Requirement already satisfied: beautifulsoup4==4.12.2 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 26)) (4.12.2)
+Requirement already satisfied: APScheduler==3.10.4 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 29)) (3.10.4)
+Requirement already satisfied: schedule==1.2.0 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 30)) (1.2.0)
+Requirement already satisfied: qdrant-client==1.15.1 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 33)) (1.15.1)
+Requirement already satisfied: loguru==0.7.2 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 36)) (0.7.2)
+Requirement already satisfied: pytz==2023.3 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 39)) (2023.3)
+Requirement already satisfied: asyncio-throttle==1.0.2 in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 42)) (1.0.2)
+Requirement already satisfied: psutil in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 45)) (7.0.0)
+Requirement already satisfied: PyYAML in c:\users\andrew\appdata\local\programs\python\python313\lib\site-packages (from -r requirements.txt (line 46)) (6.0.2)
+INFO: pip is looking at multiple versions of python-telegram-bot to determine which version is compatible with other requirements. This could take a while.
+ERROR: Cannot install httpx>=0.28.1 and python-telegram-bot==20.7 because these package versions have conflicting dependencies.
+
+The conflict is caused by:
+    The user requested httpx>=0.28.1
+    python-telegram-bot 20.7 depends on httpx~=0.25.2
+
+To fix this you could try to:
+1. loosen the range of package versions you've specified
+2. remove package versions to allow pip to attempt to solve the dependency conflict
+
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts

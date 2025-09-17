@@ -1,15 +1,15 @@
 # ============================================================================
-# ASTRO RABBIT BOT - REQUIREMENTS
+# ASTRO RABBIT BOT - REQUIREMENTS (Совместимые версии)
 # ============================================================================
 
-# Telegram Bot Framework
+# Telegram Bot Framework (с совместимой версией httpx)
 python-telegram-bot==20.7
 
-# OpenAI API (обновлена до совместимой версии)
-openai>=1.56.1
+# OpenAI API (совместимая версия для проекта)
+openai==1.12.0
 
-# HTTP клиент (обновлен до совместимой версии)
-httpx>=0.28.1
+# HTTP клиент (совместимая с python-telegram-bot)
+httpx==0.25.2
 
 # Основные утилиты
 requests==2.31.0
@@ -44,11 +44,3 @@ asyncio-throttle==1.0.2
 # Системные утилиты
 psutil
 PyYAML
-
-# Временно отключены (не критичны для основной работы):
-# pandas>=2.0.0
-# numpy>=1.24.0
-# pyephem>=4.1.0
-# swisseph>=2.10.0
-# pydantic>=2.5.0
-# lxml>=4.9.0
