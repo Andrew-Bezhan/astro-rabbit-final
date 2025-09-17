@@ -2,7 +2,6 @@
 Конфигурация APScheduler для Telegram бота
 """
 
-from pytz import UTC
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor

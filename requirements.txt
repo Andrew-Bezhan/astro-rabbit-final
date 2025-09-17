@@ -51,3 +51,5 @@ sqlalchemy==1.4.50
 psycopg2-binary
 PyYAML
 aiohttp
+psycopg2-binary
+sqlalchemy
