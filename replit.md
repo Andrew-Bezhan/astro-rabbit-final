@@ -31,7 +31,7 @@ A sophisticated AI-powered Telegram bot that provides astrology consulting for b
 ## Current Configuration
 
 ### ✅ Working Services
-- **Telegram Bot**: Fully operational with @Astro_Corp_bot
+- **Telegram Bot**: Fully operational with @ASB_Test3_bot (updated test bot)
 - **OpenAI Integration**: GPT-4 powered astrology analysis
 - **PostgreSQL Database**: Connected and initialized with all tables
 - **User Management**: Registration and session handling
@@ -67,7 +67,7 @@ A sophisticated AI-powered Telegram bot that provides astrology consulting for b
 4. Implement advanced analytics dashboards
 
 ## Running the Bot
-The bot runs automatically via the "Telegram Bot" workflow. Users can interact with it directly through Telegram at @Astro_Corp_bot.
+The bot runs automatically via the "Telegram Bot" workflow. Users can interact with it directly through Telegram at @ASB_Test3_bot.
 
 ## Deployment Status
 - ✅ Development Environment: Fully configured and running
