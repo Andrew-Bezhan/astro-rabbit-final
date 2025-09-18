@@ -158,6 +158,7 @@ credential.json
 credentials.json
 credentials*.json
 Keys_for_GPT_Assistant.env
+test_openai_key.py
 *.key
 *.pem
 *.p12
