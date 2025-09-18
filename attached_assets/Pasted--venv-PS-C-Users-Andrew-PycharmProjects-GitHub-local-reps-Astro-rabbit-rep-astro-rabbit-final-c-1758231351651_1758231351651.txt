@@ -1,0 +1,20 @@
+(venv) PS C:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final> & c:/Users/Andrew/PycharmProjects/GitHub_local_reps/Astro_rabbit_rep/astro-rabbit-final/venv/Scripts/python.exe c:/Users/Andrew/PycharmProjects/GitHub_local_reps/Astro_rabbit_rep/astro-rabbit-final/main.py
+2025-09-19 00:35:31 | INFO     | database.connection:_init_database:75 | 🗃️ База данных инициализирована: sqlite:///astrobot.db
+Traceback (most recent call last):
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\main.py", line 12, in <module>
+    from bot.telegram_bot import AstroBot
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\bot\telegram_bot.py", line 18, in <module>
+    from .handlers import MainRouter
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\bot\handlers\__init__.py", line 7, in <module>
+    from .main_router import MainRouter
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\bot\handlers\main_router.py", line 11, in <module>
+    from .company_handler import CompanyHandler
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\bot\handlers\company_handler.py", line 14, in <module>
+    from ai_astrologist.prompts import COMPANY_ZODIAC_INFO_PROMPT
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\ai_astrologist\__init__.py", line 6, in <module>
+    from .astro_agent import AstroAgent
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\ai_astrologist\astro_agent.py", line 11, in <module>
+    from ai_astrologist.numerology import NumerologyCalculator
+  File "c:\Users\Andrew\PycharmProjects\GitHub_local_reps\Astro_rabbit_rep\astro-rabbit-final\ai_astrologist\numerology.py", line 8, in <module>
+    from pytz import UTC
+ModuleNotFoundError: No module named 'pytz'
